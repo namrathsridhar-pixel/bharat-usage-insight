@@ -151,8 +151,8 @@ export function PlatformAdoption() {
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-4">
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-5 gap-x-4">
             {items.map((it, i) => (
               <div key={i}>
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
@@ -162,7 +162,7 @@ export function PlatformAdoption() {
               </div>
             ))}
           </div>
-          <div className="md:border-l md:border-slate-100 md:pl-6">
+          <div className="border-t border-slate-100 pt-5">
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
               Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
             </div>
