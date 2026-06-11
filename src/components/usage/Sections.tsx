@@ -409,21 +409,55 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
+  const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+
   function handleClick(id: string) {
     setSelectedTenantId(id);
     setTimeout(() => globalThis.scrollTo({ top: 0, behavior: "smooth" }), 60);
   }
 
-  let visibleRank = 0;
+  // search applies in both modes; expanded shows all matches, collapsed shows top 10 of active matches (then inactive at bottom)
+  const q = search.trim().toLowerCase();
+  const matches = q ? ranked.filter((r) => r.tenant.name.toLowerCase().includes(q)) : ranked;
+
+  const activeMatches = matches.filter((r) => !r.inactive);
+  const inactiveMatches = matches.filter((r) => r.inactive);
+  const visibleActive = expanded ? activeMatches : activeMatches.slice(0, 10);
+  const visible = [...visibleActive, ...(expanded ? inactiveMatches : [])];
+  const hiddenActiveCount = activeMatches.length - visibleActive.length;
+
+  // For numeric formatting: collapsed top-10 uses K/M/B; expanded list uses Indian K/L/Cr (detail table).
+  const fmt = expanded ? formatLakhCr : formatKMB;
+
+  // index map for stable rank labels (#1 .. #N within the full ranked active list)
+  const rankIndex = new Map<string, number>();
+  ranked.filter((r) => !r.inactive).forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
+
   return (
     <section>
-      <Eyebrow subtitle="Ranked by request volume">Tenant ranking</Eyebrow>
-      <Card className="p-2">
+      <Eyebrow subtitle={expanded ? `All ${ranked.length} tenants` : "Top 10 by request volume"}>Tenant ranking</Eyebrow>
+      <Card className="p-3">
+        <div className="px-1 pb-2">
+          <div className="relative">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tenants..."
+              className="w-full pl-8 pr-2 py-1.5 text-sm rounded border border-slate-200 focus:outline-none focus:border-orange-400 bg-white"
+            />
+          </div>
+        </div>
         <div className="space-y-0.5">
-          {ranked.map((r) => {
-            if (!r.inactive) visibleRank++;
-            const idx = visibleRank - 1;
-            const rankColor = !r.inactive && idx < 3 ? RANK_COLOR[idx] : undefined;
+          {visible.length === 0 && (
+            <div className="px-3 py-6 text-center text-xs text-slate-400">No tenants match "{search}"</div>
+          )}
+          {visible.map((r) => {
+            const idx = rankIndex.get(r.tenant.id) ?? 0;
+            const rankColor = !r.inactive && idx <= 3 ? RANK_COLOR[idx - 1] : undefined;
             return (
               <button
                 key={r.tenant.id}
@@ -436,8 +470,8 @@ export function TenantRanking() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 w-10 shrink-0">
                     {rankColor && <span className="h-1.5 w-1.5 rounded-full" style={{ background: rankColor }} />}
-                    <span className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx < 3 ? "text-slate-900" : "text-slate-400"}`}>
-                      {r.inactive ? "—" : `#${idx + 1}`}
+                    <span className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx <= 3 ? "text-slate-900" : "text-slate-400"}`}>
+                      {r.inactive ? "—" : `#${idx}`}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -451,15 +485,15 @@ export function TenantRanking() {
                         }`}>{r.tenant.plan}</span>
                       </div>
                       <span className={`text-xs tabular-nums shrink-0 ${r.inactive ? "text-slate-300" : "text-slate-600"}`}>
-                        {r.inactive ? "—" : formatIndian(r.requests)}
+                        {r.inactive ? "—" : fmt(r.requests)}
                       </span>
                     </div>
                     <div className="mt-1.5 flex items-center gap-2">
                       <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
                         {!r.inactive && <div className="h-full rounded-full bg-orange-500" style={{ width: `${(r.requests / max) * 100}%` }} />}
                       </div>
-                      <span className={`text-[10px] tabular-nums w-10 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}>
-                        {r.inactive ? "—" : `${r.pct.toFixed(1)}%`}
+                      <span className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}>
+                        {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
                     {r.inactive && (
@@ -471,6 +505,22 @@ export function TenantRanking() {
             );
           })}
         </div>
+        {!expanded && hiddenActiveCount > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="mt-2 w-full text-center py-2 text-xs font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50/60 rounded-lg transition"
+          >
+            Show all {ranked.length} tenants ({hiddenActiveCount} more active{inactiveMatches.length ? ` · ${inactiveMatches.length} inactive` : ""})
+          </button>
+        )}
+        {expanded && (
+          <button
+            onClick={() => { setExpanded(false); setSearch(""); }}
+            className="mt-2 w-full text-center py-2 text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition"
+          >
+            Show top 10 only
+          </button>
+        )}
       </Card>
     </section>
   );
