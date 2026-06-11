@@ -183,7 +183,7 @@ export function PlatformAdoption() {
                     </Pie>
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
                       separator="  "
                     />
                   </PieChart>
@@ -198,7 +198,7 @@ export function PlatformAdoption() {
                   <div key={d.name} className="flex items-center gap-2 text-[11px]">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
                     <span className="flex-1 text-slate-700 truncate">{d.name}</span>
-                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(1)}%</span>
+                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(2)}%</span>
                   </div>
                 ))}
               </div>
@@ -660,7 +660,7 @@ export function ServiceMix() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                  formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                  formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
                   separator="  "
                 />
               </PieChart>
@@ -675,7 +675,7 @@ export function ServiceMix() {
               <div key={s.key} className="flex items-center gap-2 text-[11px]">
                 <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
                 <span className="flex-1 text-slate-700 truncate">{s.name}</span>
-                <span className="tabular-nums text-slate-500">{s.pct.toFixed(1)}%</span>
+                <span className="tabular-nums text-slate-500">{s.pct.toFixed(2)}%</span>
               </div>
             ))}
           </div>
@@ -849,7 +849,7 @@ export function CompareTenants() {
                                 <div
                                   className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
-                                  title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(1)}% of tenant`}
+                                  title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(2)}% of tenant`}
                                 >
                                   {v > 0 ? formatKMB(v) : ""}
                                 </div>
