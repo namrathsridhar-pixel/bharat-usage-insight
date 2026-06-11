@@ -378,6 +378,9 @@ export function ServiceBreakdown() {
                       ) : (
                         <span className="text-rose-600">↓ {Math.abs(r.trendPct).toFixed(0)}%</span>
                       )}
+                      <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                        {formatLakhCr(r.prevRequests)} → {formatLakhCr(r.requests)}
+                      </div>
                     </td>
                   </tr>
                 );
