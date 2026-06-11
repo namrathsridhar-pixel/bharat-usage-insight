@@ -205,6 +205,11 @@ export function VolumeHealth() {
   const failureRate = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
 
+  const chartWithFailRate = useMemo(
+    () => chart.map((p) => ({ ...p, failRate: p.total ? +((p.failed / p.total) * 100).toFixed(2) : 0 })),
+    [chart]
+  );
+
   return (
     <section>
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
@@ -226,26 +231,48 @@ export function VolumeHealth() {
         </Card>
       </div>
       <Card className="p-5">
-        <div className="flex items-center gap-5 mb-3 text-xs text-slate-600">
-          <span className="inline-flex items-center gap-1.5"><span className="h-[3px] w-4 rounded bg-[#3B82F6]" /> Total requests</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-[2px] w-4 rounded bg-[#EF4444]" /> Failed requests</span>
+        <div className="relative">
+          <div className="absolute top-2 left-3 z-10 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Requests</div>
+          <ResponsiveContainer width="100%" height={140}>
+            <AreaChart data={chartWithFailRate} margin={{ top: 22, right: 12, left: -5, bottom: 0 }} syncId="vh">
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
+              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                formatter={(v: number) => [formatIndian(v), "Requests"]}
+                labelFormatter={(l) => `Time  ${l}`}
+                separator="  "
+              />
+              <Area type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chart} margin={{ top: 5, right: 12, left: -5, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <YAxis yAxisId="L" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-            <YAxis yAxisId="R" orientation="right" tick={{ fontSize: 11, fill: "#EF4444" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-            <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-              formatter={(v: number, n: string) => [formatIndian(v), n === "total" ? "Total" : "Failed"]}
-              labelFormatter={(l) => `Time  ${l}`}
-              separator="  "
-            />
-            <Line yAxisId="L" type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line yAxisId="R" type="monotone" dataKey="failed" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="relative -mt-1">
+          <div className="absolute top-1 left-3 z-10 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Failure rate %</div>
+          <ResponsiveContainer width="100%" height={92}>
+            <LineChart data={chartWithFailRate} margin={{ top: 16, right: 12, left: -5, bottom: 0 }} syncId="vh">
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+              <YAxis
+                domain={[0, 10]}
+                ticks={[0, 5, 10]}
+                tick={{ fontSize: 11, fill: "#64748B" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                formatter={(v: number) => [`${v.toFixed(2)}%`, "Failure rate"]}
+                labelFormatter={(l) => `Time  ${l}`}
+                separator="  "
+              />
+              <ReferenceLine y={0} stroke="#E2E8F0" strokeWidth={1} />
+              <Line type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </Card>
     </section>
   );
