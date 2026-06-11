@@ -166,40 +166,43 @@ export function PlatformAdoption() {
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
               Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
             </div>
-            <div className="flex items-center gap-5">
-              <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
-                <ResponsiveContainer width={180} height={180}>
-                  <PieChart>
-                    <Pie
-                      data={donut}
-                      dataKey="value"
-                      innerRadius={56}
-                      outerRadius={86}
-                      paddingAngle={1}
-                      stroke="#fff"
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                    >
-                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
-                      separator="  "
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{top3Pct.toFixed(0)}%</div>
-                  <div className="text-[10px] text-slate-500 mt-1">top 3 tenants</div>
+            <div className="flex items-center gap-6">
+              <div className="relative shrink-0 basis-1/3 max-w-[200px] flex justify-center" style={{ height: 180 }}>
+                <div className="relative" style={{ width: 180, height: 180 }}>
+                  <ResponsiveContainer width={180} height={180}>
+                    <PieChart>
+                      <Pie
+                        data={donut}
+                        dataKey="value"
+                        innerRadius={56}
+                        outerRadius={86}
+                        paddingAngle={1}
+                        stroke="#fff"
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                      >
+                        {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                        formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                        separator="  "
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex-1 min-w-0 basis-2/3 space-y-2">
                 {donut.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                  <div key={d.name} className="flex items-center gap-2 text-[12px]">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
-                    <span className="flex-1 text-slate-700 truncate">{d.name}</span>
-                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(2)}%</span>
+                    <span className="shrink-0 text-slate-700 truncate max-w-[55%]">{d.name}</span>
+                    <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
+                    <span className="tabular-nums text-slate-600 shrink-0">{d.pct.toFixed(2)}%</span>
                   </div>
                 ))}
               </div>
