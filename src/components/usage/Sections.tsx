@@ -912,6 +912,9 @@ export function CompareTenants() {
                     })}
                   </tbody>
                 </table>
+                <div className="mt-3 text-[12px] text-slate-500">
+                  Showing Top {heatTopN} tenants by total request volume. Adjust using the selector above.
+                </div>
                 <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
                   <span className="italic">Colour intensity = request volume. Hover any cell for details.</span>
                   <span className="inline-flex items-center gap-1.5">
