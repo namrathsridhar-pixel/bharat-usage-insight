@@ -13,7 +13,6 @@ const NAV_TOP = [
   { icon: Key, label: "API Key Management", to: "/keys" },
   { icon: FileText, label: "Logs Dashboard", to: "/logs" },
   { icon: BarChart3, label: "Usage & Metering", to: "/" },
-  { icon: UserCircle2, label: "My Usage", to: "/my-usage" },
   { icon: Bell, label: "Alerts Management", to: "/alerts" },
   { icon: ShieldCheck, label: "PII Guardrail", to: "/pii" },
 ];
