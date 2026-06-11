@@ -156,31 +156,36 @@ export function PlatformAdoption() {
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-4 gap-x-4">
-            {items.map((it, i) => (
-              <div key={i} className="flex flex-col">
-                <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-                <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-                <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
-                {it.delta !== undefined && <div className="mt-1"><Delta pct={it.delta} /></div>}
-              </div>
-            ))}
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+          {/* Left: 6 KPI cards (70%) */}
+          <div className="lg:col-span-7">
+            <div className="grid grid-cols-3 gap-3 h-full auto-rows-fr">
+              {items.map((it, i) => (
+                <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
+                  <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
+                  <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+                  <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
+                  {it.delta !== undefined && <div className="mt-1"><Delta pct={it.delta} /></div>}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="border-t border-slate-100 pt-5">
-            <div className="flex items-center justify-between mb-2 gap-3">
-              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500">
-                Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
+
+          {/* Right: Usage concentration donut (30%) */}
+          <div className="lg:col-span-3 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+                Usage concentration
               </div>
               <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
                 {CONC_TOP_OPTIONS.map((n) => {
-                  const active = concTopN === n;
+                  const isActive = concTopN === n;
                   return (
                     <button
                       key={n}
                       onClick={() => setConcTopN(n)}
-                      className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
-                        active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                      className={`px-1.5 py-0.5 text-[10px] font-semibold rounded transition ${
+                        isActive ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
                       }`}
                     >
                       {`Top ${n}`}
@@ -189,41 +194,40 @@ export function PlatformAdoption() {
                 })}
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="relative shrink-0 basis-1/3 max-w-[200px] flex justify-center" style={{ height: 180 }}>
-                <div className="relative" style={{ width: 180, height: 180 }}>
-                  <ResponsiveContainer width={180} height={180}>
-                    <PieChart>
-                      <Pie
-                        data={donut}
-                        dataKey="value"
-                        innerRadius={56}
-                        outerRadius={86}
-                        paddingAngle={1}
-                        stroke="#fff"
-                        strokeWidth={2}
-                        isAnimationActive={false}
-                      >
-                        {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                        formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
-                        separator="  "
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
-                    <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
-                  </div>
+            <div className="text-[10px] text-slate-400 mb-2">{windowLabel}</div>
+            <div className="flex flex-col items-center">
+              <div className="relative" style={{ width: 160, height: 160 }}>
+                <ResponsiveContainer width={160} height={160}>
+                  <PieChart>
+                    <Pie
+                      data={donut}
+                      dataKey="value"
+                      innerRadius={50}
+                      outerRadius={76}
+                      paddingAngle={1}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                    >
+                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                      separator="  "
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
+                  <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
                 </div>
               </div>
-              <div className="flex-1 min-w-0 basis-2/3 space-y-2">
+              <div className="w-full mt-3 space-y-1.5">
                 {donut.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2 text-[12px]">
-                    <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
-                    <span className="shrink-0 text-slate-700 truncate max-w-[55%]">{d.name}</span>
+                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
+                    <span className="shrink-0 text-slate-700 truncate max-w-[60%]">{d.name}</span>
                     <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
                     <span className="tabular-nums text-slate-600 shrink-0">{d.pct.toFixed(2)}%</span>
                   </div>
