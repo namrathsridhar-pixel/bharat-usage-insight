@@ -1,5 +1,5 @@
 // Single-source-of-truth event log for Usage & Metering.
-// 720 hours x 10 tenants x 10 services. Generated deterministically once.
+// 720 hours x 47 tenants x 10 services. Generated deterministically once.
 
 export interface HourRecord {
   hour: number; // 0 = oldest, 719 = most recent
@@ -12,38 +12,142 @@ export interface HourRecord {
   peakRps: number;
 }
 
+export type TenantCategory =
+  | "Central Government"
+  | "State Government"
+  | "Academic & Research"
+  | "PSU & Public Enterprise"
+  | "Private & NGO";
+
 export interface TenantMeta {
   id: string;
   name: string;
+  category: TenantCategory;
   plan: "Enterprise" | "Pro" | "Standard" | "Starter";
-  share: number;       // fraction of platform requests
+  share: number;             // fraction of platform requests
   avatarColor: string;
-  lastActiveHour: number; // up to which hour this tenant emits
+  firstActiveHour: number;   // hour from which tenant starts emitting
+  lastActiveHour: number;    // -1 means never active
 }
 
 export interface ServiceMeta {
   key: string;
   name: string;
-  unit: string;       // human-readable
-  unitShort: string;  // chars/min/tokens etc
+  unit: string;
+  unitShort: string;
   color: string;
-  share: number;      // fraction of tenant requests
+  share: number;
   failRate: number;
   unitsPerRequest: number;
 }
 
-export const TENANTS: TenantMeta[] = [
-  { id: "t1",  name: "Bhashini Programme",       plan: "Enterprise", share: 0.420, avatarColor: "#F97316", lastActiveHour: 719 },
-  { id: "t2",  name: "Ministry of Education",    plan: "Enterprise", share: 0.190, avatarColor: "#3B82F6", lastActiveHour: 719 },
-  { id: "t3",  name: "IIIT Hyderabad",           plan: "Pro",        share: 0.120, avatarColor: "#10B981", lastActiveHour: 719 },
-  { id: "t4",  name: "Prasar Bharati",           plan: "Pro",        share: 0.090, avatarColor: "#8B5CF6", lastActiveHour: 719 },
-  { id: "t5",  name: "Tamil Nadu e-Governance",  plan: "Standard",   share: 0.070, avatarColor: "#EC4899", lastActiveHour: 719 },
-  { id: "t6",  name: "Doordarshan Digital",      plan: "Standard",   share: 0.040, avatarColor: "#06B6D4", lastActiveHour: 719 },
-  { id: "t7",  name: "NCERT Digital",            plan: "Standard",   share: 0.030, avatarColor: "#F59E0B", lastActiveHour: 719 },
-  { id: "t8",  name: "Kerala IT Mission",        plan: "Standard",   share: 0.020, avatarColor: "#6366F1", lastActiveHour: 719 },
-  { id: "t9",  name: "Assam NIC Unit",           plan: "Starter",    share: 0.015, avatarColor: "#84CC16", lastActiveHour: 719 },
-  { id: "t10", name: "Meghalaya e-District",     plan: "Starter",    share: 0.005, avatarColor: "#94A3B8", lastActiveHour: 671 },
+const PALETTE = [
+  "#F97316", "#3B82F6", "#10B981", "#8B5CF6", "#EC4899",
+  "#06B6D4", "#F59E0B", "#6366F1", "#84CC16", "#94A3B8",
+  "#EF4444", "#14B8A6", "#A855F7", "#0EA5E9", "#DC2626",
+  "#22C55E", "#EAB308", "#7C3AED", "#DB2777", "#0891B2",
+  "#65A30D", "#D97706", "#4F46E5", "#BE185D", "#0D9488",
+  "#9333EA", "#E11D48", "#16A34A", "#CA8A04", "#7E22CE",
+  "#1D4ED8", "#15803D", "#B45309", "#831843", "#1E40AF",
+  "#166534", "#92400E", "#581C87", "#9F1239", "#075985",
+  "#365314", "#854D0E", "#4338CA", "#9D174D", "#0F766E",
+  "#A21CAF", "#1E3A8A",
 ];
+
+// Tenant definitions. Bhashini Programme is the platform operator — not a tenant.
+type TenantSeed = {
+  name: string;
+  category: TenantCategory;
+  share: number;
+  plan: TenantMeta["plan"];
+  /** "live" = active up to hour 719; "7d" = stopped >24h ago; "30d" = stopped >7d ago; "off" = never active (or stopped >30d ago) */
+  status: "live" | "7d" | "30d" | "off";
+  /** if true, first-active hour is within the last 168h */
+  newThisWeek?: boolean;
+};
+
+const SEEDS: TenantSeed[] = [
+  // Top tier (named, active)
+  { name: "Ministry of Electronics & IT (MeitY)",   category: "Central Government",       share: 0.18,   plan: "Enterprise", status: "live" },
+  { name: "Ministry of Education",                  category: "Central Government",       share: 0.14,   plan: "Enterprise", status: "live" },
+
+  // Mid tier (named, active)
+  { name: "IIIT Hyderabad",                         category: "Academic & Research",      share: 0.07,   plan: "Enterprise", status: "live" },
+  { name: "Tamil Nadu e-Governance Agency",         category: "State Government",         share: 0.06,   plan: "Enterprise", status: "live" },
+  { name: "CDAC Pune",                              category: "Academic & Research",      share: 0.05,   plan: "Pro",        status: "live" },
+  { name: "IIT Madras",                             category: "Academic & Research",      share: 0.05,   plan: "Pro",        status: "live" },
+  { name: "Indian Railways (CRIS)",                 category: "PSU & Public Enterprise",  share: 0.04,   plan: "Pro",        status: "live" },
+  { name: "UIDAI (Aadhaar)",                        category: "PSU & Public Enterprise",  share: 0.04,   plan: "Pro",        status: "live" },
+  { name: "Reverie Language Technologies",          category: "Private & NGO",            share: 0.04,   plan: "Pro",        status: "live" },
+  { name: "Kerala IT Mission",                      category: "State Government",         share: 0.03,   plan: "Pro",        status: "live" },
+
+  // Low tier active-in-24h (21)
+  { name: "Ministry of Health & Family Welfare",    category: "Central Government",       share: 0.018,  plan: "Standard",   status: "live" },
+  { name: "NCERT",                                  category: "Central Government",       share: 0.012,  plan: "Standard",   status: "live" },
+  { name: "Department of Posts",                    category: "Central Government",       share: 0.010,  plan: "Standard",   status: "live" },
+  { name: "Assam NIC Unit",                         category: "State Government",         share: 0.015,  plan: "Standard",   status: "live" },
+  { name: "Telangana State Technology Services",    category: "State Government",         share: 0.014,  plan: "Standard",   status: "live" },
+  { name: "Gujarat Informatics Ltd",                category: "State Government",         share: 0.013,  plan: "Standard",   status: "live" },
+  { name: "Maharashtra IT Corp",                    category: "State Government",         share: 0.014,  plan: "Standard",   status: "live" },
+  { name: "Karnataka e-Governance",                 category: "State Government",         share: 0.012,  plan: "Standard",   status: "live" },
+  { name: "Uttar Pradesh Electronics Corp",         category: "State Government",         share: 0.011,  plan: "Standard",   status: "live" },
+  { name: "IIT Bombay",                             category: "Academic & Research",      share: 0.016,  plan: "Standard",   status: "live" },
+  { name: "IIT Delhi",                              category: "Academic & Research",      share: 0.014,  plan: "Standard",   status: "live" },
+  { name: "CDAC Noida",                             category: "Academic & Research",      share: 0.012,  plan: "Standard",   status: "live" },
+  { name: "University of Hyderabad",                category: "Academic & Research",      share: 0.009,  plan: "Standard",   status: "live" },
+  { name: "BSNL",                                   category: "PSU & Public Enterprise",  share: 0.015,  plan: "Standard",   status: "live" },
+  { name: "NPCI",                                   category: "PSU & Public Enterprise",  share: 0.013,  plan: "Standard",   status: "live" },
+  { name: "NABARD",                                 category: "PSU & Public Enterprise",  share: 0.010,  plan: "Standard",   status: "live" },
+  { name: "NTPC Limited",                           category: "PSU & Public Enterprise",  share: 0.006,  plan: "Starter",    status: "live", newThisWeek: true },
+  { name: "Koo App",                                category: "Private & NGO",            share: 0.014,  plan: "Standard",   status: "live" },
+  { name: "Jugalbandi (AI4Bharat)",                 category: "Private & NGO",            share: 0.011,  plan: "Standard",   status: "live" },
+  { name: "Navam Technologies",                     category: "Private & NGO",            share: 0.005,  plan: "Starter",    status: "live", newThisWeek: true },
+  { name: "Karya Inc",                              category: "Private & NGO",            share: 0.004,  plan: "Starter",    status: "live", newThisWeek: true },
+
+  // Active in last 7 days but not last 24h (7)
+  { name: "Ministry of Agriculture",                category: "Central Government",       share: 0.006,  plan: "Standard",   status: "7d" },
+  { name: "Doordarshan / Prasar Bharati",           category: "Central Government",       share: 0.007,  plan: "Standard",   status: "7d" },
+  { name: "Tezpur University",                      category: "Academic & Research",      share: 0.004,  plan: "Starter",    status: "7d" },
+  { name: "Anna University",                        category: "Academic & Research",      share: 0.005,  plan: "Starter",    status: "7d" },
+  { name: "Oil India Limited",                      category: "PSU & Public Enterprise",  share: 0.005,  plan: "Starter",    status: "7d" },
+  { name: "Raftaar.in",                             category: "Private & NGO",            share: 0.004,  plan: "Starter",    status: "7d" },
+  { name: "Gram Vaani",                             category: "Private & NGO",            share: 0.004,  plan: "Starter",    status: "7d" },
+
+  // Active in last 30 days but not last 7 days (6)
+  { name: "National Informatics Centre (NIC)",      category: "Central Government",       share: 0.004,  plan: "Standard",   status: "30d" },
+  { name: "Rajasthan IT Corp",                      category: "State Government",         share: 0.003,  plan: "Starter",    status: "30d" },
+  { name: "Punjab IT Corp",                         category: "State Government",         share: 0.003,  plan: "Starter",    status: "30d" },
+  { name: "Odisha Computer App Centre",             category: "State Government",         share: 0.003,  plan: "Starter",    status: "30d" },
+  { name: "Jawaharlal Nehru University",            category: "Academic & Research",      share: 0.003,  plan: "Starter",    status: "30d" },
+  { name: "iGot Karmayogi Platform",                category: "Private & NGO",            share: 0.002,  plan: "Starter",    status: "30d" },
+
+  // Inactive — never active in this 30-day window (3)
+  { name: "Meghalaya e-District",                   category: "State Government",         share: 0,      plan: "Starter",    status: "off" },
+  { name: "Coal India Limited",                     category: "PSU & Public Enterprise",  share: 0,      plan: "Starter",    status: "off" },
+  { name: "Bhasadhara",                             category: "Private & NGO",            share: 0,      plan: "Starter",    status: "off" },
+];
+
+function activeRange(status: TenantSeed["status"], newThisWeek?: boolean): { first: number; last: number } {
+  if (status === "off")  return { first: 0,   last: -1 };                 // never emits
+  if (status === "30d")  return { first: 0,   last: 380 };                // stopped >7d ago
+  if (status === "7d")   return { first: 0,   last: 620 };                // stopped >24h ago
+  // live
+  return { first: newThisWeek ? 600 : 0, last: 719 };
+}
+
+export const TENANTS: TenantMeta[] = SEEDS.map((s, i) => {
+  const { first, last } = activeRange(s.status, s.newThisWeek);
+  return {
+    id: `t${i + 1}`,
+    name: s.name,
+    category: s.category,
+    plan: s.plan,
+    share: s.share,
+    avatarColor: PALETTE[i % PALETTE.length],
+    firstActiveHour: first,
+    lastActiveHour: last,
+  };
+});
 
 export const SERVICES: ServiceMeta[] = [
   { key: "NMT",                name: "NMT",                 unit: "Characters translated",    unitShort: "chars",  color: "#10B981", share: 0.23, failRate: 0.021, unitsPerRequest: 180 },
@@ -83,17 +187,16 @@ function todMultiplier(hourOfDay: number) {
 function buildLog(): HourRecord[] {
   const rand = mulberry(20260611);
   const out: HourRecord[] = [];
-  // peak spike at hour 715 — boost platform total to land peakRps ~18.7 req/s
   const PEAK_HOUR = 715;
 
   for (let h = 0; h < TOTAL_HOURS; h++) {
     const hourOfDay = h % 24;
     let platformHourly = PLATFORM_BASELINE_HOURLY * todMultiplier(hourOfDay);
-    platformHourly *= 0.85 + rand() * 0.30; // ±15%
+    platformHourly *= 0.85 + rand() * 0.30;
     if (h === PEAK_HOUR) platformHourly *= 1.4;
 
     for (const t of TENANTS) {
-      const active = h <= t.lastActiveHour;
+      const active = h >= t.firstActiveHour && h <= t.lastActiveHour && t.share > 0;
       const tenantHourly = active ? platformHourly * t.share : 0;
       for (const s of SERVICES) {
         const svcHourly = tenantHourly * s.share * (0.92 + rand() * 0.16);
@@ -116,9 +219,8 @@ export const BASE_HOURLY_DATA: HourRecord[] = buildLog();
 /** Append simulated new records for the most-recent hour. Called by live tick. */
 export function appendLiveTick() {
   const lastHour = TOTAL_HOURS - 1;
-  const delta = 200 + Math.floor(Math.random() * 600); // total extra requests for this tick
-  // distribute across active tenants by share, then across services by share
-  const activeTenants = TENANTS.filter((t) => lastHour <= t.lastActiveHour);
+  const delta = 200 + Math.floor(Math.random() * 600);
+  const activeTenants = TENANTS.filter((t) => lastHour >= t.firstActiveHour && lastHour <= t.lastActiveHour && t.share > 0);
   const totalShare = activeTenants.reduce((a, t) => a + t.share, 0) || 1;
   for (const t of activeTenants) {
     const tDelta = delta * (t.share / totalShare);
