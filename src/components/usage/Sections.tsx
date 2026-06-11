@@ -252,47 +252,60 @@ export function VolumeHealth() {
         </Card>
       </div>
       <Card className="p-5">
-        <div className="relative">
-          <div className="absolute top-2 left-3 z-10 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Requests</div>
-          <ResponsiveContainer width="100%" height={140}>
-            <AreaChart data={chartWithFailRate} margin={{ top: 22, right: 12, left: -5, bottom: 0 }} syncId="vh">
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                formatter={(v: number) => [formatKMB(v), "Requests"]}
-                labelFormatter={(l) => `Time  ${l}`}
-                separator="  "
-              />
-              <Area type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+        <div className="flex items-stretch">
+          <div className="w-5 shrink-0 flex items-center justify-center">
+            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+              Requests
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <ResponsiveContainer width="100%" height={140}>
+              <AreaChart data={chartWithFailRate} margin={{ top: 10, right: 12, left: 0, bottom: 0 }} syncId="vh">
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
+                <YAxis width={48} tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                  formatter={(v: number) => [formatKMB(v), "Requests"]}
+                  labelFormatter={(l) => `Time  ${l}`}
+                  separator="  "
+                />
+                <Area type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="relative -mt-1">
-          <div className="absolute top-1 left-3 z-10 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Failure rate %</div>
-          <ResponsiveContainer width="100%" height={92}>
-            <LineChart data={chartWithFailRate} margin={{ top: 16, right: 12, left: -5, bottom: 0 }} syncId="vh">
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <YAxis
-                domain={[0, 10]}
-                ticks={[0, 5, 10]}
-                tick={{ fontSize: 11, fill: "#64748B" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${v}%`}
-              />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                formatter={(v: number) => [`${v.toFixed(2)}%`, "Failure rate"]}
-                labelFormatter={(l) => `Time  ${l}`}
-                separator="  "
-              />
-              <ReferenceLine y={0} stroke="#E2E8F0" strokeWidth={1} />
-              <Line type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="flex items-stretch -mt-1">
+          <div className="w-5 shrink-0 flex items-center justify-center">
+            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+              Failure rate %
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <ResponsiveContainer width="100%" height={92}>
+              <LineChart data={chartWithFailRate} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} syncId="vh">
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+                <YAxis
+                  width={48}
+                  domain={[0, 10]}
+                  ticks={[0, 5, 10]}
+                  tick={{ fontSize: 11, fill: "#64748B" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                  formatter={(v: number) => [`${v.toFixed(2)}%`, "Failure rate"]}
+                  labelFormatter={(l) => `Time  ${l}`}
+                  separator="  "
+                />
+                <ReferenceLine y={0} stroke="#E2E8F0" strokeWidth={1} />
+                <Line type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </Card>
     </section>
