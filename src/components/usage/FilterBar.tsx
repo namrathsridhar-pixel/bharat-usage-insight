@@ -39,7 +39,11 @@ function PlanPill({ plan }: { plan: string }) {
 }
 
 export function FilterBar() {
-  const { window, setWindow, customLabel, setCustomLabel, role, selectedTenantId, setSelectedTenantId, effectiveTenant } = useUsage();
+  const {
+    window, setWindow, customLabel, setCustomLabel,
+    role, setRole,
+    selectedTenantId, setSelectedTenantId, effectiveTenant,
+  } = useUsage();
   const [search, setSearch] = useState("");
   const [range, setRange] = useState<DateRange | undefined>();
   const [openCustom, setOpenCustom] = useState(false);
@@ -157,6 +161,30 @@ export function FilterBar() {
           </PopoverContent>
         </Popover>
       )}
+
+      {/* View-as role toggle (power-user) */}
+      <div className="flex items-center gap-2 pl-3 ml-1 border-l border-slate-200">
+        <span className="text-[11px] uppercase tracking-wider text-slate-500 font-medium">View as</span>
+        <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-[11px]">
+          {[
+            { k: "platform_admin", l: "Platform" },
+            { k: "tenant_admin", l: "Tenant" },
+          ].map((opt) => {
+            const active = role === opt.k;
+            return (
+              <button
+                key={opt.k}
+                onClick={() => setRole(opt.k as any)}
+                className={`px-2.5 py-1 rounded font-medium transition ${
+                  active ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {opt.l}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
