@@ -48,7 +48,7 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
       appendLiveTick();
       setTick((t) => t + 1);
       setLastUpdatedAt(Date.now());
-    }, 30_000);
+    }, 60_000);
     return () => clearInterval(id);
   }, [isLive]);
 
