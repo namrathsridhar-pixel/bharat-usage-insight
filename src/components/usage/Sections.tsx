@@ -135,17 +135,22 @@ export function PlatformAdoption() {
     { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
-  // donut: top 5 tenants + Others (exclude tenants with 0 requests in this window)
+  // Top N selector for donut
+  const CONC_TOP_OPTIONS = [5, 10, 25] as const;
+  type ConcTopN = typeof CONC_TOP_OPTIONS[number];
+  const [concTopN, setConcTopN] = useState<ConcTopN>(10);
+
   const active = concentration.filter((c) => c.requests > 0);
-  const top5 = active.slice(0, 5);
-  const rest = active.slice(5);
+  const donutTopCount = Math.min(concTopN, active.length);
+  const topSlice = active.slice(0, donutTopCount);
+  const rest = active.slice(donutTopCount);
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
-    ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
+    ...topSlice.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
     ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
-  const top3Pct = active.slice(0, 3).reduce((a, r) => a + r.pct, 0);
+  const donutTopPct = topSlice.reduce((a, r) => a + r.pct, 0);
 
   return (
     <section>
@@ -163,43 +168,64 @@ export function PlatformAdoption() {
             ))}
           </div>
           <div className="border-t border-slate-100 pt-5">
-            <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
-              Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
-            </div>
-            <div className="flex items-center gap-5">
-              <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
-                <ResponsiveContainer width={180} height={180}>
-                  <PieChart>
-                    <Pie
-                      data={donut}
-                      dataKey="value"
-                      innerRadius={56}
-                      outerRadius={86}
-                      paddingAngle={1}
-                      stroke="#fff"
-                      strokeWidth={2}
-                      isAnimationActive={false}
+            <div className="flex items-center justify-between mb-2 gap-3">
+              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+                Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
+              </div>
+              <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+                {CONC_TOP_OPTIONS.map((n) => {
+                  const active = concTopN === n;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setConcTopN(n)}
+                      className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                        active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                      }`}
                     >
-                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
-                      separator="  "
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{top3Pct.toFixed(0)}%</div>
-                  <div className="text-[10px] text-slate-500 mt-1">top 3 tenants</div>
+                      {`Top ${n}`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="relative shrink-0 basis-1/3 max-w-[200px] flex justify-center" style={{ height: 180 }}>
+                <div className="relative" style={{ width: 180, height: 180 }}>
+                  <ResponsiveContainer width={180} height={180}>
+                    <PieChart>
+                      <Pie
+                        data={donut}
+                        dataKey="value"
+                        innerRadius={56}
+                        outerRadius={86}
+                        paddingAngle={1}
+                        stroke="#fff"
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                      >
+                        {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                        formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                        separator="  "
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1 min-w-0 space-y-1.5">
+              <div className="flex-1 min-w-0 basis-2/3 space-y-2">
                 {donut.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                  <div key={d.name} className="flex items-center gap-2 text-[12px]">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
-                    <span className="flex-1 text-slate-700 truncate">{d.name}</span>
-                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(2)}%</span>
+                    <span className="shrink-0 text-slate-700 truncate max-w-[55%]">{d.name}</span>
+                    <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
+                    <span className="tabular-nums text-slate-600 shrink-0">{d.pct.toFixed(2)}%</span>
                   </div>
                 ))}
               </div>
