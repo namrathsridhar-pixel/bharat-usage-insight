@@ -257,7 +257,7 @@ export function VolumeHealth() {
             <AreaChart data={chartWithFailRate} margin={{ top: 22, right: 12, left: -5, bottom: 0 }} syncId="vh">
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
                 formatter={(v: number) => [formatIndian(v), "Requests"]}
@@ -377,7 +377,7 @@ export function ServiceBreakdown() {
                     <td className="py-3 px-3 text-slate-600">{r.service.unit}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatIndian(r.requests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
-                      {formatCompact(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
+                      {formatKMB(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
                     <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatIndian(r.failed)}</td>
@@ -703,12 +703,12 @@ export function CompareTenants() {
                 <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
                   <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 110, left: 30, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
                       formatter={(v: number, _n, p: any) => [
-                        `${formatIndian(v)} req · ${formatCompact(p.payload.nativeUnits)} ${p.payload.unitShort}`,
+                        `${formatIndian(v)} req · ${formatKMB(p.payload.nativeUnits)} ${p.payload.unitShort}`,
                         "Usage",
                       ]}
                       separator="  "
@@ -719,7 +719,7 @@ export function CompareTenants() {
                         formatter: (_v: any, _n: any, p: any) => {
                           const d = p?.payload;
                           if (!d) return "";
-                          return `${formatIndian(d.requests)} req · ${formatCompact(d.nativeUnits)} ${d.unitShort}`;
+                          return `${formatIndian(d.requests)} req · ${formatKMB(d.nativeUnits)} ${d.unitShort}`;
                         },
                       }}
                     >
@@ -801,7 +801,7 @@ export function CompareTenants() {
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
                                   title={`${t.name} · ${svc.name} · ${formatIndian(v)} req · ${pct.toFixed(1)}% of tenant`}
                                 >
-                                  {v > 0 ? formatCompact(v) : ""}
+                                  {v > 0 ? formatKMB(v) : ""}
                                 </div>
                               </td>
                             );
