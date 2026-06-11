@@ -1,81 +1,64 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TENANTS, type Role, type TimeWindow, type Tenant } from "./data";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { TENANTS, type TenantMeta } from "@/data/eventLog";
+import { appendLiveTick } from "@/data/eventLog";
+
+export type TimeWindow = "1h" | "24h" | "7d" | "30d" | "custom";
+export type Role = "platform_admin" | "tenant_admin";
 
 interface UsageCtx {
   role: Role;
-  setRole: (r: Role) => void;
   window: TimeWindow;
   setWindow: (w: TimeWindow) => void;
-  customLabel: string | null;
-  setCustomLabel: (l: string | null) => void;
   selectedTenantId: string | null;
   setSelectedTenantId: (id: string | null) => void;
-  effectiveTenant: Tenant | null;
+  effectiveTenant: TenantMeta | null;
   loading: boolean;
-  triggerLoading: () => void;
-  /** increments every 30s when window is live (1h/24h) */
   tick: number;
   lastUpdatedAt: number;
-  pulseDelta: { requests: number; successRate: number; rps: number };
 }
 
 const Ctx = createContext<UsageCtx | null>(null);
+const TENANT_ADMIN_TENANT_ID = "t1";
 
-const SELF_TENANT_ID = "t1";
-
-export function UsageProvider({ children, defaultRole = "platform_admin" }: { children: ReactNode; defaultRole?: Role }) {
-  const [role, setRole] = useState<Role>(defaultRole);
-  const [window, setWindow] = useState<TimeWindow>("24h");
-  const [customLabel, setCustomLabel] = useState<string | null>(null);
+export function UsageProvider({ children, role = "platform_admin" }: { children: ReactNode; role?: Role }) {
+  const [window, setWindowState] = useState<TimeWindow>("24h");
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number>(Date.now());
-  const [pulseDelta, setPulseDelta] = useState({ requests: 0, successRate: 0, rps: 0 });
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
 
-  const triggerLoading = () => {
+  const setWindow = (w: TimeWindow) => {
+    if (w === "custom") return; // disabled
+    setWindowState(w);
     setLoading(true);
-    setTimeout(() => setLoading(false), 350);
+    setTimeout(() => setLoading(false), 200);
   };
 
-  useEffect(() => { triggerLoading(); }, [window, selectedTenantId, role]);
-
-  // reset live deltas when filters change
   useEffect(() => {
-    setPulseDelta({ requests: 0, successRate: 0, rps: 0 });
-    setLastUpdatedAt(Date.now());
-    setTick(0);
-  }, [window, selectedTenantId]);
+    // 400ms skeleton on tenant change
+    setLoading(true);
+    const id = setTimeout(() => setLoading(false), 400);
+    return () => clearTimeout(id);
+  }, [selectedTenantId]);
 
-  // live tick every 30s, only when window is 1h or 24h
   const isLive = window === "1h" || window === "24h";
-  const tickRef = useRef(tick);
-  tickRef.current = tick;
   useEffect(() => {
     if (!isLive) return;
     const id = setInterval(() => {
+      appendLiveTick();
       setTick((t) => t + 1);
       setLastUpdatedAt(Date.now());
-      setPulseDelta((prev) => ({
-        requests: prev.requests + Math.floor(200 + Math.random() * 600),
-        successRate: +(prev.successRate + (Math.random() - 0.5) * 0.2).toFixed(2),
-        rps: +(prev.rps + (Math.random() - 0.5) * 0.6).toFixed(2),
-      }));
     }, 30_000);
     return () => clearInterval(id);
   }, [isLive]);
 
-  const effectiveTenant = useMemo<Tenant | null>(() => {
-    if (role === "tenant_admin") return TENANTS.find((t) => t.id === SELF_TENANT_ID) ?? null;
+  const effectiveTenant = useMemo<TenantMeta | null>(() => {
+    if (role === "tenant_admin") return TENANTS.find((t) => t.id === TENANT_ADMIN_TENANT_ID) ?? null;
     return selectedTenantId ? TENANTS.find((t) => t.id === selectedTenantId) ?? null : null;
   }, [role, selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{
-      role, setRole, window, setWindow, customLabel, setCustomLabel,
-      selectedTenantId, setSelectedTenantId, effectiveTenant, loading, triggerLoading,
-      tick, lastUpdatedAt, pulseDelta,
-    }}>
+    <Ctx.Provider value={{ role, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt }}>
       {children}
     </Ctx.Provider>
   );
@@ -87,7 +70,6 @@ export function useUsage() {
   return v;
 }
 
-/** Returns a "Updated Xs ago" string that updates every 5 seconds */
 export function useUpdatedAgo(): string {
   const { lastUpdatedAt } = useUsage();
   const [now, setNow] = useState(Date.now());
