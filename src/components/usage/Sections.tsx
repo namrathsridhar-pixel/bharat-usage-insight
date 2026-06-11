@@ -721,6 +721,9 @@ export function CompareTenants() {
   const isTenantScoped = !!effectiveTenant;
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
+  const HEAT_TOP_OPTIONS = [5, 10, 25] as const;
+  type HeatTopN = typeof HEAT_TOP_OPTIONS[number];
+  const [heatTopN, setHeatTopN] = useState<HeatTopN>(10);
 
   const heat = useMemo(
     () => (!isTenantScoped ? getHeatmap(windowHours, selected) : null),
