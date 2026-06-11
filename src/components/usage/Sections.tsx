@@ -16,7 +16,7 @@ import {
   getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
   getUsageConcentration, getPrevTotals,
-  getServiceSparkline, getTopTenantsByRps, getHeatmap,
+  getTopTenantsByRps, getHeatmap,
   windowToHours, formatIndian, formatKMB, formatLakhCr,
   type WindowHours,
 } from "@/data/aggregations";
@@ -50,25 +50,6 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
   );
 }
 
-function Sparkline({ serviceKey, color, windowHours }: { serviceKey: string; color: string; windowHours: WindowHours }) {
-  const data = useMemo(() => getServiceSparkline(serviceKey, windowHours), [serviceKey, windowHours]);
-  return (
-    <div style={{ width: 60, height: 28 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 1, right: 0, left: 0, bottom: 0 }}>
-          <Tooltip
-            cursor={{ fill: "rgba(0,0,0,0.04)" }}
-            contentStyle={{ fontSize: 11, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", padding: "4px 8px" }}
-            formatter={(v: number) => [formatKMB(v), "Requests"]}
-            labelFormatter={(_l, p: any) => p?.[0]?.payload?.label ?? ""}
-            separator="  "
-          />
-          <Bar dataKey="v" fill={color} radius={[1, 1, 0, 0]} isAnimationActive={false} />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 function useScope() {
   const { window, effectiveTenant } = useUsage();
@@ -350,7 +331,7 @@ export function ServiceBreakdown() {
                 <Th k="nativeUnits">Native units</Th>
                 <Th k="successRate">Success %</Th>
                 <Th k="failed">Failed</Th>
-                <th className="py-3 px-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">Trend (5 periods)</th>
+                <th className="py-3 px-3 pr-4 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">vs prev period</th>
               </tr>
             </thead>
             <tbody>
@@ -381,10 +362,14 @@ export function ServiceBreakdown() {
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
                     <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatLakhCr(r.failed)}</td>
-                    <td className="py-3 px-3 text-right">
-                      <div className="inline-block">
-                        <Sparkline serviceKey={r.service.key} color={r.service.color} windowHours={windowHours} />
-                      </div>
+                    <td className="py-3 px-3 pr-4 text-right tabular-nums">
+                      {r.trendPct === 0 || !isFinite(r.trendPct) ? (
+                        <span className="text-slate-400">— 0%</span>
+                      ) : r.trendPct > 0 ? (
+                        <span className="text-emerald-600">↑ {Math.abs(r.trendPct).toFixed(0)}%</span>
+                      ) : (
+                        <span className="text-rose-600">↓ {Math.abs(r.trendPct).toFixed(0)}%</span>
+                      )}
                     </td>
                   </tr>
                 );
