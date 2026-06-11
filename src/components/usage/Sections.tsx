@@ -254,7 +254,7 @@ export function VolumeHealth() {
       <Card className="p-5">
         <div className="flex items-stretch">
           <div className="w-5 shrink-0 flex items-center justify-center">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}>
               Requests
             </span>
           </div>
