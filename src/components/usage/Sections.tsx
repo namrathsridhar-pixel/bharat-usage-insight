@@ -479,28 +479,23 @@ export function TenantRanking() {
 /* =========================================================
    ZONE 5 — Throughput & Load
 ========================================================= */
-export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: boolean }) {
+export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { singleLineOnly?: boolean }) {
   const { windowHours, tenantId } = useScope();
   const { tick, window, effectiveTenant } = useUsage();
   const isDaily = windowHours === 168 || windowHours === 720;
-  const [breakdown, setBreakdown] = useState(false);
   const isTenantScoped = !!effectiveTenant;
-  const showBreakdownBtn = !singleLineOnly && !isTenantScoped;
 
-  const breakdownIds = showBreakdownBtn && breakdown ? ["t1", "t2", "t3"] : [];
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const { points, avgRps, peakRps, peakLabel, baseline } = useMemo(
-    () => getRpsData(rows, windowHours, breakdownIds),
-    [rows, windowHours, breakdownIds.join(",")]
+    () => getRpsData(rows, windowHours, []),
+    [rows, windowHours]
+  );
+  const topTenants = useMemo(
+    () => (isTenantScoped ? [] : getTopTenantsByRps(windowHours, 3)),
+    [windowHours, isTenantScoped, tick]
   );
 
   const peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
-
-  const tenantSwatches = [
-    { id: "t1", name: "Bhashini", color: "#F97316" },
-    { id: "t2", name: "Ministry of Education", color: "#3B82F6" },
-    { id: "t3", name: "IIIT Hyderabad", color: "#10B981" },
-  ];
 
   const subtitle = isTenantScoped
     ? `Requests per second for ${effectiveTenant!.name}`
@@ -508,19 +503,7 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
 
   return (
     <section>
-      <Eyebrow
-        subtitle={subtitle}
-        right={showBreakdownBtn && (
-          <button
-            onClick={() => setBreakdown((b) => !b)}
-            className={`text-[11px] font-medium px-2.5 py-1 rounded border transition ${
-              breakdown ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            {breakdown ? "Hide tenant breakdown" : "Break down by tenant"}
-          </button>
-        )}
-      >Throughput &amp; load</Eyebrow>
+      <Eyebrow subtitle={subtitle}>Throughput &amp; load</Eyebrow>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <Card className="p-4">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg RPS</div>
@@ -536,14 +519,6 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
         </Card>
       </div>
       <Card className="p-5">
-        {showBreakdownBtn && breakdown && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-[11px] text-slate-600">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#1F2937]" /> Platform total</span>
-            {tenantSwatches.map((t) => (
-              <span key={t.id} className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: t.color }} /> {t.name}</span>
-            ))}
-          </div>
-        )}
         <ResponsiveContainer width="100%" height={220}>
           {isDaily ? (
             <BarChart data={points} margin={{ top: 10, right: 40, left: -10, bottom: 0 }}>
@@ -564,12 +539,32 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
               <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
               <Line type="monotone" dataKey="platformRps" stroke="#1F2937" strokeWidth={2} dot={false} isAnimationActive={false} name="Platform total" />
-              {showBreakdownBtn && breakdown && tenantSwatches.map((t) => (
-                <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color} strokeWidth={1.6} dot={false} isAnimationActive={false} name={t.name} />
-              ))}
             </LineChart>
           )}
         </ResponsiveContainer>
+
+        {!isTenantScoped && topTenants.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 mb-2">Top tenants by throughput</div>
+            <div className="divide-y divide-slate-100">
+              <div className="flex items-center text-[10px] uppercase tracking-wider text-slate-400 pb-1.5">
+                <div className="flex-1">Tenant</div>
+                <div className="w-24 text-right tabular-nums">Avg RPS</div>
+                <div className="w-24 text-right tabular-nums">Peak RPS</div>
+              </div>
+              {topTenants.map((t) => (
+                <div key={t.tenant.id} className="flex items-center py-2 text-sm">
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.tenant.avatarColor }} />
+                    <span className="text-slate-800 truncate">{t.tenant.name}</span>
+                  </div>
+                  <div className="w-24 text-right tabular-nums text-slate-900 font-medium">{t.avgRps}</div>
+                  <div className="w-24 text-right tabular-nums text-slate-600">{t.peakRps}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
     </section>
   );
