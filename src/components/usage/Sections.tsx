@@ -417,8 +417,8 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
-  const TOP_OPTIONS = [5, 10, 25, 50] as const;
-  type TopN = typeof TOP_OPTIONS[number] | "all";
+  const TOP_OPTIONS = [5, 10, 25] as const;
+  type TopN = typeof TOP_OPTIONS[number];
   const [topN, setTopN] = useState<TopN>(10);
 
   function handleClick(id: string) {
@@ -428,9 +428,9 @@ export function TenantRanking() {
 
   const activeRanked = ranked.filter((r) => !r.inactive);
   const inactiveRanked = ranked.filter((r) => r.inactive);
-  const limit = topN === "all" ? activeRanked.length : Math.min(topN, activeRanked.length);
+  const limit = Math.min(topN, activeRanked.length);
   const visibleActive = activeRanked.slice(0, limit);
-  const isExpanded = topN === "all" || topN > 10;
+  const isExpanded = topN > 10;
   const visible = [...visibleActive, ...(isExpanded ? inactiveRanked : [])];
 
   // K/M/B for compact (≤10), Indian K/L/Cr for detail
@@ -439,9 +439,7 @@ export function TenantRanking() {
   const rankIndex = new Map<string, number>();
   activeRanked.forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
 
-  const subtitle = topN === "all"
-    ? `All ${ranked.length} tenants`
-    : `Top ${limit} by request volume`;
+  const subtitle = `Top ${limit} by request volume`;
 
   return (
     <section>
