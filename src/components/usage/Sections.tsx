@@ -59,7 +59,7 @@ function Sparkline({ serviceKey, color, windowHours }: { serviceKey: string; col
           <Tooltip
             cursor={{ fill: "rgba(0,0,0,0.04)" }}
             contentStyle={{ fontSize: 11, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", padding: "4px 8px" }}
-            formatter={(v: number) => [formatIndian(v), "Requests"]}
+            formatter={(v: number) => [formatKMB(v), "Requests"]}
             labelFormatter={(_l, p: any) => p?.[0]?.payload?.label ?? ""}
             separator="  "
           />
@@ -100,7 +100,7 @@ export function PlatformPulse() {
   const prevActive = isTenantView ? getActiveServices(prevRows) : getActiveTenants(prevRows);
 
   const items = [
-    { label: "Total requests", value: formatIndian(totals.totalRequests), delta: reqDelta },
+    { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
     { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
     { label: "Avg RPS", value: `${avgRps}`, suffix: "req/s", delta: rpsDelta },
     isTenantView
@@ -183,7 +183,7 @@ export function PlatformAdoption() {
                     </Pie>
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
                       separator="  "
                     />
                   </PieChart>
@@ -236,17 +236,17 @@ export function VolumeHealth() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <Card className="p-4">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Total requests</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatIndian(totals.totalRequests)}</div>
+          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalRequests)}</div>
           <div className="mt-2"><Delta pct={reqDelta} /></div>
         </Card>
         <Card className="p-4 bg-emerald-50/40 border-emerald-100">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-emerald-700">Successful</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatIndian(totals.totalSuccessful)}</div>
+          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalSuccessful)}</div>
           <div className="mt-1.5 text-[11px] text-emerald-700 tabular-nums">{successRate.toFixed(2)}% success rate</div>
         </Card>
         <Card className="p-4 bg-rose-50/40 border-rose-100">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-rose-700">Failed</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatIndian(totals.totalFailed)}</div>
+          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalFailed)}</div>
           <div className="mt-1.5 text-[11px] text-rose-700 tabular-nums">{failureRate.toFixed(2)}% failure rate</div>
         </Card>
       </div>
@@ -260,7 +260,7 @@ export function VolumeHealth() {
               <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                formatter={(v: number) => [formatIndian(v), "Requests"]}
+                formatter={(v: number) => [formatKMB(v), "Requests"]}
                 labelFormatter={(l) => `Time  ${l}`}
                 separator="  "
               />
@@ -375,12 +375,12 @@ export function ServiceBreakdown() {
                       <span className="font-medium text-slate-900">{r.service.name}</span>
                     </td>
                     <td className="py-3 px-3 text-slate-600">{r.service.unit}</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatIndian(r.requests)}</td>
+                    <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatLakhCr(r.requests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
-                      {formatKMB(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
+                      {formatLakhCr(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatIndian(r.failed)}</td>
+                    <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatLakhCr(r.failed)}</td>
                     <td className="py-3 px-3 text-right">
                       <div className="inline-block">
                         <Sparkline serviceKey={r.service.key} color={r.service.color} windowHours={windowHours} />
@@ -610,7 +610,7 @@ export function ServiceMix() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                  formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                  formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
                   separator="  "
                 />
               </PieChart>
@@ -708,7 +708,7 @@ export function CompareTenants() {
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
                       formatter={(v: number, _n, p: any) => [
-                        `${formatIndian(v)} req · ${formatKMB(p.payload.nativeUnits)} ${p.payload.unitShort}`,
+                        `${formatKMB(v)} req · ${formatKMB(p.payload.nativeUnits)} ${p.payload.unitShort}`,
                         "Usage",
                       ]}
                       separator="  "
@@ -719,7 +719,7 @@ export function CompareTenants() {
                         formatter: (_v: any, _n: any, p: any) => {
                           const d = p?.payload;
                           if (!d) return "";
-                          return `${formatIndian(d.requests)} req · ${formatKMB(d.nativeUnits)} ${d.unitShort}`;
+                          return `${formatKMB(d.requests)} req · ${formatKMB(d.nativeUnits)} ${d.unitShort}`;
                         },
                       }}
                     >
@@ -799,7 +799,7 @@ export function CompareTenants() {
                                 <div
                                   className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
-                                  title={`${t.name} · ${svc.name} · ${formatIndian(v)} req · ${pct.toFixed(1)}% of tenant`}
+                                  title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(1)}% of tenant`}
                                 >
                                   {v > 0 ? formatKMB(v) : ""}
                                 </div>
@@ -811,7 +811,7 @@ export function CompareTenants() {
                               <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                                 <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
                               </div>
-                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatIndian(total)}</span>
+                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatKMB(total)}</span>
                             </div>
                           </td>
                         </tr>
