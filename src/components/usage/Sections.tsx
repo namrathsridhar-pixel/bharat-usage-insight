@@ -806,28 +806,46 @@ export function CompareTenants() {
               <Eyebrow
                 subtitle="Heatmap of request volume per tenant per service"
                 right={
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
-                        Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-60 p-2" align="end">
-                      <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
-                        <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
-                        <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
-                      </div>
-                      <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
-                        {SERVICES.map((s) => (
-                          <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
-                            <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
-                            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-                            <span className="text-sm">{s.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+                      {HEAT_TOP_OPTIONS.map((n) => {
+                        const active = heatTopN === n;
+                        return (
+                          <button
+                            key={n}
+                            onClick={() => setHeatTopN(n)}
+                            className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                              active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >
+                            {`Top ${n}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
+                          Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-60 p-2" align="end">
+                        <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
+                          <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
+                          <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
+                        </div>
+                        <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
+                          {SERVICES.map((s) => (
+                            <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
+                              <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
+                              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
+                              <span className="text-sm">{s.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 }
               >Usage by tenant &amp; service</Eyebrow>
               <Card className="p-5 overflow-x-auto">
