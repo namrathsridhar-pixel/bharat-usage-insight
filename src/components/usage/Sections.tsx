@@ -350,7 +350,7 @@ export function ServiceBreakdown() {
                 <Th k="nativeUnits">Native units</Th>
                 <Th k="successRate">Success %</Th>
                 <Th k="failed">Failed</Th>
-                <th className="py-3 px-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">Trend (5 periods)</th>
+                <th className="py-3 px-3 pr-4 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">vs prev period</th>
               </tr>
             </thead>
             <tbody>
