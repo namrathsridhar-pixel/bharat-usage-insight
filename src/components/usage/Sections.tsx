@@ -135,10 +135,8 @@ export function PlatformAdoption() {
     { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
-  // Top N selector for donut
-  const CONC_TOP_OPTIONS = [5, 10, 25] as const;
-  type ConcTopN = typeof CONC_TOP_OPTIONS[number];
-  const [concTopN, setConcTopN] = useState<ConcTopN>(10);
+  // Fixed Top 10 for usage concentration donut
+  const concTopN = 10;
 
   const active = concentration.filter((c) => c.requests > 0);
   const donutTopCount = Math.min(concTopN, active.length);
