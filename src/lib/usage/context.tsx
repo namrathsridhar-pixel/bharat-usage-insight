@@ -48,7 +48,7 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
       appendLiveTick();
       setTick((t) => t + 1);
       setLastUpdatedAt(Date.now());
-    }, 30_000);
+    }, 60_000);
     return () => clearInterval(id);
   }, [isLive]);
 
@@ -74,13 +74,12 @@ export function useUpdatedAgo(): string {
   const { lastUpdatedAt } = useUsage();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 5_000);
+    const id = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(id);
   }, []);
   const diff = Math.max(0, Math.floor((now - lastUpdatedAt) / 1000));
-  if (diff < 5) return "just now";
-  if (diff < 60) return `${diff}s ago`;
   const m = Math.floor(diff / 60);
+  if (m < 1) return "just now";
   if (m < 60) return `${m}m ago`;
   return `${Math.floor(m / 60)}h ago`;
 }
