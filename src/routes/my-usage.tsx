@@ -3,8 +3,7 @@ import { UsageProvider, useUsage } from "@/lib/usage/context";
 import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
 import {
-  PlatformPulse, VolumeHealthChart, ServiceBreakdownTable,
-  ThroughputBlock, LoadingOverlay,
+  PlatformPulse, VolumeHealth, ServiceBreakdown, ThroughputLoad, LoadingOverlay,
 } from "@/components/usage/Sections";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -20,7 +19,7 @@ export const Route = createFileRoute("/my-usage")({
 
 function MyUsagePage() {
   return (
-    <UsageProvider defaultRole="tenant_admin">
+    <UsageProvider role="tenant_admin">
       <PortalShell>
         <PageInner />
       </PortalShell>
@@ -37,7 +36,7 @@ function PageInner() {
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
           My Usage — {effectiveTenant?.name ?? "Your organisation"}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Your organisation's consumption across AI4I Orchestrate services</p>
+        <p className="mt-1 text-sm text-slate-500">Your organisation's service consumption</p>
       </div>
 
       <FilterBar />
@@ -45,9 +44,9 @@ function PageInner() {
       <LoadingOverlay>
         <div className="space-y-8">
           <PlatformPulse />
-          <VolumeHealthChart />
-          <ServiceBreakdownTable />
-          <ThroughputBlock singleLineOnly />
+          <VolumeHealth />
+          <ServiceBreakdown />
+          <ThroughputLoad singleLineOnly />
         </div>
       </LoadingOverlay>
 
