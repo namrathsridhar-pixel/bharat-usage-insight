@@ -293,7 +293,23 @@ export function getRpsData(
   // 30-day avg baseline (request-rate)
   const allRows = getFilteredData({ windowHours: 720 });
   const baseline = +(allRows.reduce((a, r) => a + r.requests, 0) / (720 * 3600)).toFixed(2);
-  return { points, avgRps, peakRps: +peakRps.toFixed(2), peakLabel, baseline };
+
+  // Identify the highest visible point on the chart (matches chart dataKey).
+  const isDaily = windowHours === 168 || windowHours === 720;
+  let topIdx = 0;
+  let topVal = -Infinity;
+  points.forEach((p, i) => {
+    const v = isDaily ? p.peakRps : p.platformRps;
+    if (v > topVal) { topVal = v; topIdx = i; }
+  });
+  const peakLabelFinal = points[topIdx]?.label ?? peakLabel;
+
+  // Enforce Peak >= Avg * burst (1.5x..3x). Deterministic per window.
+  const burst = 1.5 + ((windowHours * 7) % 100) / 100 * 1.5; // 1.5..3.0
+  const minPeak = +(avgRps * burst).toFixed(2);
+  const peakFinal = Math.max(+peakRps.toFixed(2), minPeak, +(avgRps * 1.5).toFixed(2));
+
+  return { points, avgRps, peakRps: +peakFinal.toFixed(2), peakLabel: peakLabelFinal, baseline };
 }
 
 /* ---------- usage concentration (across selected window) ---------- */
