@@ -152,13 +152,13 @@ export function PlatformAdoption() {
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-5 gap-x-4 items-stretch">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-4 gap-x-4">
             {items.map((it, i) => (
-              <div key={i} className="flex flex-col min-h-[110px]">
+              <div key={i} className="flex flex-col">
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-                <div className="mt-1.5 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-                {it.delta !== undefined && <div className="mt-1.5"><Delta pct={it.delta} /></div>}
+                <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
                 <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
+                {it.delta !== undefined && <div className="mt-1"><Delta pct={it.delta} /></div>}
               </div>
             ))}
           </div>
@@ -254,7 +254,7 @@ export function VolumeHealth() {
       <Card className="p-5">
         <div className="flex items-stretch">
           <div className="w-5 shrink-0 flex items-center justify-center">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}>
               Requests
             </span>
           </div>
@@ -277,7 +277,7 @@ export function VolumeHealth() {
         </div>
         <div className="flex items-stretch -mt-1">
           <div className="w-5 shrink-0 flex items-center justify-center">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}>
               Failure rate %
             </span>
           </div>
@@ -570,7 +570,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
     [windowHours, isTenantScoped, tick]
   );
 
-  const peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
+  const _peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
 
   const subtitle = isTenantScoped
     ? `Requests per second for ${effectiveTenant!.name}`
@@ -595,27 +595,22 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
       </div>
       <Card className="p-5">
         <ResponsiveContainer width="100%" height={220}>
-          {isDaily ? (
-            <BarChart data={points} margin={{ top: 10, right: 40, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => [`${v} req/s`, "Peak RPS"]} separator="  " />
-              <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
-              <Bar dataKey="peakRps" radius={[3, 3, 0, 0]}>
-                {points.map((_, i) => <Cell key={i} fill={i === peakIdx ? "#F97316" : "#CBD5E1"} />)}
-              </Bar>
-            </BarChart>
-          ) : (
-            <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
-              <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
-              <Line type="monotone" dataKey="platformRps" stroke="#1F2937" strokeWidth={2} dot={false} isAnimationActive={false} name="Platform total" />
-            </LineChart>
-          )}
+          <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
+            <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
+            <Line
+              type="monotone"
+              dataKey={isDaily ? "peakRps" : "platformRps"}
+              stroke="#1F2937"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+              name={isDaily ? "Peak RPS" : "Platform total"}
+            />
+          </LineChart>
         </ResponsiveContainer>
 
         {!isTenantScoped && topTenants.length > 0 && (
@@ -630,6 +625,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
               {topTenants.map((t) => (
                 <div key={t.tenant.id} className="flex items-center py-2 text-sm">
                   <div className="flex-1 flex items-center gap-2.5 min-w-0">
+                    <span className="h-7 w-1.5 rounded-sm shrink-0" style={{ background: t.tenant.avatarColor }} aria-hidden />
                     <span
                       className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
                       style={{ background: t.tenant.avatarColor }}
@@ -637,7 +633,6 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
                     >
                       {t.tenant.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
                     </span>
-                    <span className="h-4 w-1 rounded-sm shrink-0" style={{ background: t.tenant.avatarColor }} />
                     <span className="text-slate-800 truncate">{t.tenant.name}</span>
                   </div>
                   <div className="w-24 text-right tabular-nums text-slate-900 font-medium">{t.avgRps}</div>
