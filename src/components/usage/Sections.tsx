@@ -135,10 +135,8 @@ export function PlatformAdoption() {
     { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
-  // Top N selector for donut
-  const CONC_TOP_OPTIONS = [5, 10, 25] as const;
-  type ConcTopN = typeof CONC_TOP_OPTIONS[number];
-  const [concTopN, setConcTopN] = useState<ConcTopN>(10);
+  // Fixed Top 10 for usage concentration donut
+  const concTopN = 10;
 
   const active = concentration.filter((c) => c.requests > 0);
   const donutTopCount = Math.min(concTopN, active.length);
@@ -173,28 +171,12 @@ export function PlatformAdoption() {
 
           {/* Right: Usage concentration donut (30%) */}
           <div className="lg:col-span-3 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
-            <div className="flex items-center justify-between mb-3 gap-2">
+            <div className="flex items-baseline justify-between mb-3 gap-2">
               <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
                 Usage concentration
               </div>
-              <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-                {CONC_TOP_OPTIONS.map((n) => {
-                  const isActive = concTopN === n;
-                  return (
-                    <button
-                      key={n}
-                      onClick={() => setConcTopN(n)}
-                      className={`px-1.5 py-0.5 text-[10px] font-semibold rounded transition ${
-                        isActive ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {`Top ${n}`}
-                    </button>
-                  );
-                })}
-              </div>
+              <div className="text-[10px] text-slate-400">{windowLabel}</div>
             </div>
-            <div className="text-[10px] text-slate-400 mb-2">{windowLabel}</div>
             <div className="flex flex-col items-center">
               <div className="relative" style={{ width: 160, height: 160 }}>
                 <ResponsiveContainer width={160} height={160}>
