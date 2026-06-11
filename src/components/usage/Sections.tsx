@@ -408,11 +408,13 @@ export function TenantRanking() {
 ========================================================= */
 export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: boolean }) {
   const { windowHours, tenantId } = useScope();
-  const { tick, window } = useUsage();
+  const { tick, window, effectiveTenant } = useUsage();
   const isDaily = windowHours === 168 || windowHours === 720;
   const [breakdown, setBreakdown] = useState(false);
+  const isTenantScoped = !!effectiveTenant;
+  const showBreakdownBtn = !singleLineOnly && !isTenantScoped;
 
-  const breakdownIds = !singleLineOnly && breakdown ? ["t1", "t2", "t3"] : [];
+  const breakdownIds = showBreakdownBtn && breakdown ? ["t1", "t2", "t3"] : [];
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const { points, avgRps, peakRps, peakLabel, baseline } = useMemo(
     () => getRpsData(rows, windowHours, breakdownIds),
@@ -427,11 +429,15 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
     { id: "t3", name: "IIIT Hyderabad", color: "#10B981" },
   ];
 
+  const subtitle = isTenantScoped
+    ? `Requests per second for ${effectiveTenant!.name}`
+    : "Requests per second across the selected time window";
+
   return (
     <section>
       <Eyebrow
-        subtitle="Requests per second across the selected time window"
-        right={!singleLineOnly && (
+        subtitle={subtitle}
+        right={showBreakdownBtn && (
           <button
             onClick={() => setBreakdown((b) => !b)}
             className={`text-[11px] font-medium px-2.5 py-1 rounded border transition ${
