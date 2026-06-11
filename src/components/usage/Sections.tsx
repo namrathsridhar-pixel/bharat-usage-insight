@@ -117,11 +117,22 @@ export function PlatformAdoption() {
     window === "24h" ? "last 24 hours" :
     window === "7d"  ? "last 7 days"   : "last 30 days";
 
-  const items = [
-    { label: "Active tenants", value: getActiveTenants24h(), sub: "last 24 hours" },
-    { label: "Active tenants", value: getActiveTenants7d(),  sub: "last 7 days" },
-    { label: "Active tenants", value: getActiveTenants30d(), sub: "last 30 days" },
-    { label: "New this week",  value: getNewTenants7d(),     sub: "onboarded" },
+  const curRows = useMemo(() => getFilteredData({ windowHours }), [windowHours]);
+  const curTotals = useMemo(() => getTotals(curRows), [curRows]);
+  const prevTotals = useMemo(() => getPrevTotals(windowHours), [windowHours]);
+  const activeCount = Math.max(1, getActiveTenants(curRows));
+  const avgPerTenant = Math.round(curTotals.totalRequests / activeCount);
+  const prevAvgPerTenant = Math.round(prevTotals.totalRequests / activeCount);
+  const avgDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
+
+  type Item = { label: string; value: React.ReactNode; sub: string; delta?: number };
+  const items: Item[] = [
+    { label: "Total tenants",         value: TENANTS.length,             sub: "registered on platform" },
+    { label: "Active tenants",        value: getActiveTenants24h(),      sub: "last 24 hours" },
+    { label: "Active tenants",        value: getActiveTenants7d(),       sub: "last 7 days" },
+    { label: "Active tenants",        value: getActiveTenants30d(),      sub: "last 30 days" },
+    { label: "New — Last 7 days",     value: getNewTenants7d(),          sub: "onboarded" },
+    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
   // donut: top 5 tenants + Others (exclude tenants with 0 requests in this window)
@@ -141,11 +152,12 @@ export function PlatformAdoption() {
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-4">
             {items.map((it, i) => (
               <div key={i}>
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
                 <div className="mt-1.5 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+                {it.delta !== undefined && <div className="mt-1.5"><Delta pct={it.delta} /></div>}
                 <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
               </div>
             ))}
