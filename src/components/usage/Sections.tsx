@@ -109,7 +109,14 @@ export function PlatformPulse() {
    ZONE 2 — Platform Adoption
 ========================================================= */
 export function PlatformAdoption() {
-  const concentration = useMemo(() => getUsageConcentration(), []);
+  const { window } = useUsage();
+  const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
+  const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
+  const windowLabel =
+    window === "1h"  ? "last 1 hour"   :
+    window === "24h" ? "last 24 hours" :
+    window === "7d"  ? "last 7 days"   : "last 30 days";
+
   const items = [
     { label: "Active tenants", value: getActiveTenants24h(), sub: "last 24 hours" },
     { label: "Active tenants", value: getActiveTenants7d(),  sub: "last 7 days" },
@@ -117,16 +124,17 @@ export function PlatformAdoption() {
     { label: "New this week",  value: getNewTenants7d(),     sub: "onboarded" },
   ];
 
-  // donut: top 5 tenants + Others
-  const top5 = concentration.slice(0, 5);
-  const rest = concentration.slice(5);
+  // donut: top 5 tenants + Others (exclude tenants with 0 requests in this window)
+  const active = concentration.filter((c) => c.requests > 0);
+  const top5 = active.slice(0, 5);
+  const rest = active.slice(5);
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
     ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
     ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
-  const top3Pct = concentration.slice(0, 3).reduce((a, r) => a + r.pct, 0);
+  const top3Pct = active.slice(0, 3).reduce((a, r) => a + r.pct, 0);
 
   return (
     <section>
@@ -144,7 +152,7 @@ export function PlatformAdoption() {
           </div>
           <div className="md:border-l md:border-slate-100 md:pl-6">
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
-              Usage concentration <span className="text-slate-400 normal-case font-normal">· last 30 days</span>
+              Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
             </div>
             <div className="flex items-center gap-5">
               <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
