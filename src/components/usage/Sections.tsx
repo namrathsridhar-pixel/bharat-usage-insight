@@ -16,7 +16,7 @@ import {
   getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
   getUsageConcentration, getPrevTotals,
-  getServiceSparkline, getTopTenantsByRps, getHeatmap,
+  getTopTenantsByRps, getHeatmap,
   windowToHours, formatIndian, formatKMB, formatLakhCr,
   type WindowHours,
 } from "@/data/aggregations";
