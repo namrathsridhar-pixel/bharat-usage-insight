@@ -447,18 +447,17 @@ export function TenantRanking() {
         subtitle={subtitle}
         right={
           <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-            {[...TOP_OPTIONS, "all" as const].map((n) => {
+            {TOP_OPTIONS.map((n) => {
               const active = topN === n;
-              const label = n === "all" ? "All" : `Top ${n}`;
               return (
                 <button
-                  key={String(n)}
+                  key={n}
                   onClick={() => setTopN(n)}
                   className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
                     active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  {label}
+                  {`Top ${n}`}
                 </button>
               );
             })}
