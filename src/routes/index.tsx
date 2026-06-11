@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { X } from "lucide-react";
 import { UsageProvider, useUsage } from "@/lib/usage/context";
 import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
 import {
-  AdoptionSection, RequestVolumeSection, ThroughputSection, ServiceUsageSection,
-  UsageTrendSection, TopTenantsSection, ComparisonSection, BreakdownSection,
-  LoadingOverlay,
+  PlatformPulse, VolumeHealthChart, ServiceBreakdownTable, TopTenantsList,
+  ThroughputBlock, TenantAdoptionGrid, CompareTenantsSection, LoadingOverlay,
 } from "@/components/usage/Sections";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -31,59 +32,70 @@ function UsagePage() {
 }
 
 function PageInner() {
-  const { role, setRole, effectiveTenant } = useUsage();
+  const { role, effectiveTenant } = useUsage();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const isTenant = role === "tenant_admin";
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
+    <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
       {/* Page header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Usage &amp; Metering</h1>
-          <p className="mt-1 text-sm text-slate-500">Monitor service consumption, tenant activity, and platform throughput</p>
-        </div>
-        <div className="inline-flex rounded-full border border-slate-200 bg-white p-0.5 text-xs">
-          {[
-            { k: "platform_admin", l: "Platform Admin" },
-            { k: "tenant_admin", l: "Tenant Admin" },
-          ].map((opt) => {
-            const active = role === opt.k;
-            return (
-              <button
-                key={opt.k}
-                onClick={() => setRole(opt.k as any)}
-                className={`px-3 py-1.5 rounded-full font-medium transition ${active ? "bg-orange-500 text-white" : "text-slate-600 hover:text-slate-900"}`}
-              >
-                {opt.l}
-              </button>
-            );
-          })}
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Usage &amp; Metering</h1>
+        <p className="mt-1 text-sm text-slate-500">Monitor service consumption, tenant activity, and platform throughput</p>
       </div>
 
       <FilterBar />
 
-      {role === "tenant_admin" && effectiveTenant && (
-        <div className="rounded-lg border border-orange-100 bg-orange-50/60 px-4 py-2.5 text-sm text-slate-700">
-          <span className="font-medium">{effectiveTenant.name}</span> · {effectiveTenant.plan} plan ·{" "}
-          <span className="text-slate-500">Usage data scoped to your organisation</span>
+      {isTenant && !bannerDismissed && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-sky-100 bg-sky-50/70 px-4 py-2.5 text-sm text-slate-700">
+          <div>
+            <span className="font-medium">Bhashini Programme</span>
+            <span className="mx-1.5 text-slate-400">·</span>
+            <span className="text-slate-600">Viewing your organisation's usage data</span>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="p-1 rounded hover:bg-sky-100 text-slate-500"
+            aria-label="Dismiss"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
-      {role === "platform_admin" && effectiveTenant && (
+      {!isTenant && effectiveTenant && (
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
           Viewing: <span className="font-medium">{effectiveTenant.name}</span> · {effectiveTenant.plan} plan
         </div>
       )}
 
       <LoadingOverlay>
-        <div className="space-y-6">
-          <AdoptionSection />
-          <RequestVolumeSection />
-          <ThroughputSection />
-          <ServiceUsageSection />
-          <UsageTrendSection />
-          <TopTenantsSection />
-          <ComparisonSection />
-          <BreakdownSection />
+        <div className="space-y-8">
+          {/* ZONE 1 — Platform pulse */}
+          <PlatformPulse />
+
+          {/* ZONE 2 — Volume + health */}
+          <VolumeHealthChart />
+
+          {/* ZONE 3 — Split: service breakdown + top tenants */}
+          <div className={`grid grid-cols-1 ${isTenant ? "" : "lg:grid-cols-5"} gap-6`}>
+            <div className={isTenant ? "" : "lg:col-span-3"}>
+              <ServiceBreakdownTable />
+            </div>
+            {!isTenant && (
+              <div className="lg:col-span-2">
+                <TopTenantsList />
+              </div>
+            )}
+          </div>
+
+          {/* ZONE 4 — Throughput + tenant adoption */}
+          <div className={`grid grid-cols-1 ${isTenant ? "" : "lg:grid-cols-2"} gap-6`}>
+            <ThroughputBlock />
+            {!isTenant && <TenantAdoptionGrid />}
+          </div>
+
+          {/* ZONE 5 — Compare tenants */}
+          {!isTenant && <CompareTenantsSection />}
         </div>
       </LoadingOverlay>
 
