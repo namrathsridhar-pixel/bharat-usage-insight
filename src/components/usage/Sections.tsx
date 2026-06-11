@@ -381,10 +381,14 @@ export function ServiceBreakdown() {
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
                     <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatLakhCr(r.failed)}</td>
-                    <td className="py-3 px-3 text-right">
-                      <div className="inline-block">
-                        <Sparkline serviceKey={r.service.key} color={r.service.color} windowHours={windowHours} />
-                      </div>
+                    <td className="py-3 px-3 pr-4 text-right tabular-nums">
+                      {r.trendPct === 0 || !isFinite(r.trendPct) ? (
+                        <span className="text-slate-400">— 0%</span>
+                      ) : r.trendPct > 0 ? (
+                        <span className="text-emerald-600">↑ {Math.abs(r.trendPct).toFixed(0)}%</span>
+                      ) : (
+                        <span className="text-rose-600">↓ {Math.abs(r.trendPct).toFixed(0)}%</span>
+                      )}
                     </td>
                   </tr>
                 );
