@@ -155,7 +155,7 @@ export function getTenantUsage(tenant: Tenant, window: TimeWindow): TenantUsageS
   const topService = [...services].sort((a, b) => b.totalRequests - a.totalRequests)[0]?.service ?? "NMT";
   const seconds = window === "1h" ? 3600 : window === "24h" ? 86400 : window === "7d" ? 604800 : 2592000;
   const avgRps = +(totalRequests / seconds).toFixed(2);
-  const peakRps = +Math.max(...services.map((s) => s.peakRps)).toFixed(2);
+  const peakRps = +(avgRps * (3.5 + seededRand(tenant.id.charCodeAt(1) * 31)() * 3)).toFixed(2);
   const quotaLimit = services.reduce((a, x) => a + x.quotaLimit, 0);
   const quotaUsed = services.reduce((a, x) => a + x.quotaUsed, 0);
 
