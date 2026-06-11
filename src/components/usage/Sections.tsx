@@ -868,7 +868,10 @@ export function CompareTenants() {
                     </tr>
                   </thead>
                   <tbody>
-                    {TENANTS.map((t) => {
+                    {[...TENANTS]
+                      .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
+                      .slice(0, heatTopN)
+                      .map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
                       return (
                         <tr key={t.id} className="border-t border-slate-100">
