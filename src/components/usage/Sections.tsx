@@ -50,6 +50,26 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
   );
 }
 
+function Sparkline({ serviceKey, color, windowHours }: { serviceKey: string; color: string; windowHours: WindowHours }) {
+  const data = useMemo(() => getServiceSparkline(serviceKey, windowHours), [serviceKey, windowHours]);
+  return (
+    <div style={{ width: 60, height: 28 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 1, right: 0, left: 0, bottom: 0 }}>
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.04)" }}
+            contentStyle={{ fontSize: 11, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", padding: "4px 8px" }}
+            formatter={(v: number) => [formatIndian(v), "Requests"]}
+            labelFormatter={(_l, p: any) => p?.[0]?.payload?.label ?? ""}
+            separator="  "
+          />
+          <Bar dataKey="v" fill={color} radius={[1, 1, 0, 0]} isAnimationActive={false} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function useScope() {
   const { window, effectiveTenant } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "24h" : window) as WindowHours;
