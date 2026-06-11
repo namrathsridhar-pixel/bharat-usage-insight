@@ -25,6 +25,7 @@ export function getFilteredData(opts: FilterOpts): HourRecord[] {
 }
 
 /* ---------- formatters ---------- */
+/** Indian comma format. Used only in detail-table tooltips where exact value matters. */
 export function formatIndian(n: number): string {
   if (!isFinite(n) || n === 0) return "0";
   const isNeg = n < 0;
@@ -34,12 +35,32 @@ export function formatIndian(n: number): string {
   const rest = s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",");
   return (isNeg ? "-" : "") + rest + "," + last3;
 }
-export function formatCompact(n: number): string {
-  if (n >= 1_00_00_000) return (n / 1_00_00_000).toFixed(2) + " Cr";
-  if (n >= 1_00_000) return (n / 1_00_000).toFixed(2) + " L";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return Math.round(n).toString();
+
+/** Adaptive K / M / B for KPIs, axes, and chart labels. */
+export function formatKMB(n: number): string {
+  if (!isFinite(n)) return "0";
+  const sign = n < 0 ? "-" : "";
+  const a = Math.abs(n);
+  if (a < 1000) return sign + Math.round(a).toString();
+  if (a < 1_000_000) return sign + (a / 1000).toFixed(1) + "K";
+  if (a < 1_000_000_000) return sign + (a / 1_000_000).toFixed(2) + "M";
+  return sign + (a / 1_000_000_000).toFixed(2) + "B";
 }
+
+/** Adaptive Indian K / L / Cr for detail table rows. */
+export function formatLakhCr(n: number): string {
+  if (!isFinite(n)) return "0";
+  const sign = n < 0 ? "-" : "";
+  const a = Math.abs(n);
+  if (a < 1000) return sign + Math.round(a).toString();
+  if (a < 1_00_000) return sign + (a / 1000).toFixed(1) + "K";
+  if (a < 1_00_00_000) return sign + (a / 1_00_000).toFixed(2) + "L";
+  return sign + (a / 1_00_00_000).toFixed(2) + "Cr";
+}
+
+/** @deprecated retained as alias for formatKMB to keep older call sites working. */
+export function formatCompact(n: number): string { return formatKMB(n); }
+
 
 /* ---------- core aggregations ---------- */
 export interface Totals {
