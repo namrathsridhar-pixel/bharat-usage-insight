@@ -90,12 +90,11 @@ export function getNewTenants7d(): number {
   const minHour = TOTAL_HOURS - 168;
   let count = 0;
   for (const t of TENANTS) {
-    const firstActive = BASE_HOURLY_DATA.find((r) => r.tenantId === t.id && r.requests > 0);
-    if (firstActive && firstActive.hour >= minHour) count++;
+    if (t.firstActiveHour >= minHour && t.lastActiveHour >= t.firstActiveHour) count++;
   }
-  // ensure at least 2 for demo
-  return count || 2;
+  return count;
 }
+
 
 export function getActiveServices(rows: HourRecord[]): number {
   const set = new Set<string>();
