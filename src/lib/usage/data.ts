@@ -135,7 +135,7 @@ export function getTenantUsage(tenant: Tenant, window: TimeWindow): TenantUsageS
     const quotaUsed = total;
     const seconds = window === "1h" ? 3600 : window === "24h" ? 86400 : window === "7d" ? 604800 : 2592000;
     const avgRps = +(total / seconds).toFixed(2);
-    const peakRps = +(avgRps * (3 + rand() * 4)).toFixed(2);
+    const peakRps = +(avgRps * (3.5 + rand() * 3)).toFixed(2);
     const sparkline = Array.from({ length: 7 }, () => Math.floor(total / 7 * (0.5 + rand() * 1.0)));
     return {
       service: s.key,
