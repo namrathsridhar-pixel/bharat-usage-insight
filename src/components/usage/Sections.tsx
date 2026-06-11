@@ -1,7 +1,7 @@
 import { useUsage } from "@/lib/usage/context";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  TENANTS, SERVICES, getTenantUsage, getTimeSeries,
+  TENANTS, SERVICES, getTenantUsage, getTimeSeries, getTenantRpsSeries,
   formatIndian, formatCompact, getServiceByKey, type ServiceUsage,
 } from "@/lib/usage/data";
 import {
@@ -9,13 +9,13 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight,
+  ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 
-/* ---------- shared helpers ---------- */
+/* ---------- shared ---------- */
 
 function Eyebrow({ children, right }: { children: React.ReactNode; right?: React.ReactNode }) {
   return (
@@ -66,15 +66,17 @@ function useAggregate() {
       const fail = total - succ;
       const units = rows.reduce((a, x) => a + x.units, 0);
       const avgRps = +(rows.reduce((a, x) => a + x.avgRps, 0)).toFixed(2);
-      const peakRps = +(avgRps * 4.2).toFixed(2);
+      const ratioSeed = (sv.key.charCodeAt(0) % 30) / 100 + 0.25; // 0.25..0.55
+      const peakRps = +(avgRps / Math.min(0.40, Math.max(0.25, ratioSeed))).toFixed(2);
+      const trendPct = rows.length ? +(rows.reduce((a, x) => a + x.trendPct, 0) / rows.length).toFixed(1) : 0;
       return {
         service: sv.key, totalRequests: total, successful: succ, failed: fail,
         units, unitShort: sv.unitShort,
-        quotaUsed: 0, quotaLimit: 0,
         avgRps, peakRps,
         peakTimestamp: rows[0]?.peakTimestamp ?? "",
         failRate: fail / Math.max(1, total),
-        sparkline: rows[0]?.sparkline ?? [0, 0, 0, 0, 0, 0, 0],
+        successRate: succ / Math.max(1, total),
+        trendPct,
       };
     });
     return { snapshots, totalRequests, successful, failed, services, tenants };
@@ -86,18 +88,21 @@ function useAggregate() {
 ========================================================= */
 export function PlatformPulse() {
   const { totalRequests, successful, snapshots } = useAggregate();
-  const successRate = successful / Math.max(1, totalRequests);
-  const avgRps = +snapshots.reduce((a, s) => a + s.avgRps, 0).toFixed(2);
+  const { pulseDelta, tick } = useUsage();
+
+  const baseSuccessRate = successful / Math.max(1, totalRequests);
+  const baseAvgRps = +snapshots.reduce((a, s) => a + s.avgRps, 0).toFixed(2);
   const activeTenants = TENANTS.filter((t) => t.active24h).length;
-  const { role } = useUsage();
+
+  const liveRequests = totalRequests + pulseDelta.requests;
+  const liveSuccessRate = Math.min(100, Math.max(0, baseSuccessRate * 100 + pulseDelta.successRate));
+  const liveRps = Math.max(0, +(baseAvgRps + pulseDelta.rps).toFixed(2));
 
   const items = [
-    { label: "Total requests", value: formatIndian(totalRequests), delta: 8.4 },
-    { label: "Success rate", value: `${(successRate * 100).toFixed(2)}%`, delta: 0.3 },
-    { label: "Avg RPS", value: `${avgRps}`, suffix: "req/s", delta: 5.1 },
-    role === "platform_admin"
-      ? { label: "Active tenants", value: `${activeTenants}`, suffix: `of ${TENANTS.length}`, delta: 12.5 }
-      : { label: "Failed requests", value: formatIndian(totalRequests - successful), delta: -2.1, invert: true },
+    { label: "Total requests", value: formatIndian(liveRequests), delta: 8.4 },
+    { label: "Success rate", value: `${liveSuccessRate.toFixed(2)}%`, delta: 0.3 },
+    { label: "Avg RPS", value: `${liveRps}`, suffix: "req/s", delta: 5.1 },
+    { label: "Active tenants", value: `${activeTenants}`, suffix: `of ${TENANTS.length}`, delta: 12.5 },
   ];
 
   return (
@@ -105,11 +110,11 @@ export function PlatformPulse() {
       {items.map((it, i) => (
         <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-          <div className="mt-2 flex items-baseline gap-1.5">
+          <div key={tick} className="pulse-fade mt-2 flex items-baseline gap-1.5">
             <div className="text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
             {"suffix" in it && it.suffix && <div className="text-xs text-slate-500">{it.suffix}</div>}
           </div>
-          <div className="mt-2"><Delta pct={it.delta} invert={(it as any).invert} /></div>
+          <div className="mt-2"><Delta pct={it.delta} /></div>
         </div>
       ))}
     </div>
@@ -117,12 +122,37 @@ export function PlatformPulse() {
 }
 
 /* =========================================================
-   ZONE 2 — Volume + Health chart
+   ZONE 2 — Volume + health  (with live shift on 1h/24h)
 ========================================================= */
 export function VolumeHealthChart() {
-  const { window } = useUsage();
+  const { window, tick } = useUsage();
   const tenants = useScopedTenants();
-  const series = useMemo(() => getTimeSeries(window, tenants), [window, tenants]);
+  const baseSeries = useMemo(() => getTimeSeries(window, tenants), [window, tenants]);
+  const [series, setSeries] = useState(baseSeries);
+
+  // reset on filter changes
+  useEffect(() => { setSeries(baseSeries); }, [baseSeries]);
+
+  // shift on live tick (only 1h/24h)
+  const isLive = window === "1h" || window === "24h";
+  useEffect(() => {
+    if (!isLive || tick === 0) return;
+    setSeries((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      const jitter = 0.85 + Math.random() * 0.4;
+      const total = Math.floor(last.total * jitter);
+      const failed = Math.floor(total * (0.015 + Math.random() * 0.025));
+      const newPoint = {
+        label: last.label,
+        total,
+        successful: total - failed,
+        failed,
+        rps: +(total / 3600).toFixed(2),
+      };
+      return [...prev.slice(1), newPoint];
+    });
+  }, [tick, isLive]);
 
   return (
     <section>
@@ -143,13 +173,13 @@ export function VolumeHealthChart() {
             <YAxis yAxisId="L" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
             <YAxis yAxisId="R" orientation="right" tick={{ fontSize: 11, fill: "#EF4444" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              formatter={(v: number, n: string) => [formatIndian(v), n === "total" ? "Total requests" : "Failed requests"]}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
+              formatter={(v: number, n: string) => [formatIndian(v), n === "total" ? "Total" : "Failed"]}
               labelFormatter={(l) => `Time  ${l}`}
               separator="  "
             />
-            <Line yAxisId="L" type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2.4} dot={false} />
-            <Line yAxisId="R" type="monotone" dataKey="failed" stroke="#EF4444" strokeWidth={1.5} dot={false} />
+            <Line yAxisId="L" type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2.4} dot={false} isAnimationActive={false} />
+            <Line yAxisId="R" type="monotone" dataKey="failed" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </Card>
@@ -160,7 +190,7 @@ export function VolumeHealthChart() {
 /* =========================================================
    ZONE 3 LEFT — Service breakdown table
 ========================================================= */
-type SortKey = "totalRequests" | "units" | "successRate" | "failed";
+type SortKey = "totalRequests" | "units" | "successRate" | "failed" | "trendPct";
 export function ServiceBreakdownTable() {
   const { services } = useAggregate();
   const [sortKey, setSortKey] = useState<SortKey>("totalRequests");
@@ -169,12 +199,8 @@ export function ServiceBreakdownTable() {
   const rows = useMemo(() => {
     const r = [...services];
     r.sort((a, b) => {
-      const av = sortKey === "units" ? a.units : sortKey === "successRate"
-        ? a.successful / Math.max(1, a.totalRequests)
-        : sortKey === "failed" ? a.failed : a.totalRequests;
-      const bv = sortKey === "units" ? b.units : sortKey === "successRate"
-        ? b.successful / Math.max(1, b.totalRequests)
-        : sortKey === "failed" ? b.failed : b.totalRequests;
+      const av = (a as any)[sortKey] ?? 0;
+      const bv = (b as any)[sortKey] ?? 0;
       return sortDir === "desc" ? bv - av : av - bv;
     });
     return r;
@@ -184,10 +210,10 @@ export function ServiceBreakdownTable() {
     if (sortKey === k) setSortDir(sortDir === "desc" ? "asc" : "desc");
     else { setSortKey(k); setSortDir("desc"); }
   }
-  function Th({ k, align = "right", children }: { k: SortKey; align?: "right" | "left"; children: React.ReactNode }) {
+  function Th({ k, children }: { k: SortKey; children: React.ReactNode }) {
     const active = sortKey === k;
     return (
-      <th className={`py-3 px-3 ${align === "right" ? "text-right" : "text-left"}`}>
+      <th className="py-3 px-3 text-right">
         <button onClick={() => toggleSort(k)} className={`inline-flex items-center gap-1 ${active ? "text-slate-900" : "text-slate-500"}`}>
           {children}
           {active ? (sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
@@ -207,15 +233,17 @@ export function ServiceBreakdownTable() {
                 <th className="py-3 pl-4 pr-3 text-left font-semibold">Service</th>
                 <Th k="totalRequests">Requests</Th>
                 <Th k="units">Native units</Th>
-                <Th k="successRate">Success</Th>
+                <Th k="successRate">Success %</Th>
                 <Th k="failed">Failed</Th>
-                <th className="py-3 px-3 pr-4 text-left font-semibold">Trend</th>
+                <Th k="trendPct">Trend</Th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => {
                 const sv = getServiceByKey(r.service);
-                const successRate = r.totalRequests > 0 ? r.successful / r.totalRequests : 0;
+                const sr = r.successRate * 100;
+                const srColor = sr >= 95 ? "text-emerald-700" : sr >= 90 ? "text-amber-600" : "text-rose-600";
+                const trendUp = r.trendPct >= 0;
                 if (r.totalRequests === 0) {
                   return (
                     <tr key={r.service} className="border-b border-slate-100 last:border-0">
@@ -236,18 +264,15 @@ export function ServiceBreakdownTable() {
                     </td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatIndian(r.totalRequests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
-                      {formatIndian(r.units)} <span className="text-[11px] text-slate-500">{r.unitShort}</span>
+                      {formatCompact(r.units)} <span className="text-[11px] text-slate-500">{r.unitShort}</span>
                     </td>
-                    <td className="py-3 px-3 text-right tabular-nums text-emerald-700">{(successRate * 100).toFixed(2)}%</td>
+                    <td className={`py-3 px-3 text-right tabular-nums font-medium ${srColor}`}>{sr.toFixed(2)}%</td>
                     <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatIndian(r.failed)}</td>
-                    <td className="py-3 px-3 pr-4 w-[110px]">
-                      <div className="h-10 w-[90px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={r.sparkline.map((v, i) => ({ i, v }))}>
-                            <Bar dataKey="v" fill={sv.color} radius={[2, 2, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
+                    <td className="py-3 px-3 text-right">
+                      <span className={`inline-flex items-center gap-1 tabular-nums text-xs font-medium ${trendUp ? "text-emerald-600" : "text-rose-600"}`}>
+                        {trendUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+                        {trendUp ? "↑" : "↓"} {Math.abs(r.trendPct).toFixed(1)}%
+                      </span>
                     </td>
                   </tr>
                 );
@@ -263,9 +288,11 @@ export function ServiceBreakdownTable() {
 /* =========================================================
    ZONE 3 RIGHT — Top tenants ranked list
 ========================================================= */
+const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
+
 export function TopTenantsList() {
   const { window, setSelectedTenantId } = useUsage();
-  const [showAll, setShowAll] = useState(false);
+  const [count, setCount] = useState<5 | 10>(10);
 
   const all = useMemo(() => {
     const snaps = TENANTS.map((t) => ({ tenant: t, ...getTenantUsage(t, window) }));
@@ -274,46 +301,61 @@ export function TopTenantsList() {
   }, [window]);
   const platformTotal = all.reduce((a, s) => a + s.totalRequests, 0);
   const max = all[0]?.totalRequests || 1;
-  const rows = showAll ? all : all.slice(0, 5);
+  const rows = all.slice(0, count);
+
+  function handleSelect(id: string) {
+    setSelectedTenantId(id);
+    window && setTimeout(() => globalThis.scrollTo({ top: 0, behavior: "smooth" }), 60);
+  }
 
   return (
     <section>
-      <Eyebrow>Top tenants</Eyebrow>
-      <div className="space-y-2">
-        {rows.map((r, idx) => {
-          const sharePct = (r.totalRequests / Math.max(1, platformTotal)) * 100;
-          const barPct = (r.totalRequests / max) * 100;
-          return (
+      <Eyebrow right={
+        <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-[11px]">
+          {[5, 10].map((n) => (
             <button
-              key={r.tenantId}
-              onClick={() => setSelectedTenantId(r.tenantId)}
-              className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 transition group"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] tabular-nums text-slate-400 w-5 font-medium">#{idx + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="text-sm font-medium text-slate-900 truncate group-hover:text-orange-600">{r.tenant.name}</span>
-                    <span className="text-xs text-slate-500 tabular-nums shrink-0">{formatIndian(r.totalRequests)}</span>
+              key={n}
+              onClick={() => setCount(n as 5 | 10)}
+              className={`px-2.5 py-1 rounded font-medium transition ${count === n ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"}`}
+            >{n}</button>
+          ))}
+        </div>
+      }>Top tenants</Eyebrow>
+      <Card className="p-2">
+        <div className="space-y-0.5">
+          {rows.map((r, idx) => {
+            const sharePct = (r.totalRequests / Math.max(1, platformTotal)) * 100;
+            const barPct = (r.totalRequests / max) * 100;
+            const rankColor = idx < 3 ? RANK_COLOR[idx] : undefined;
+            return (
+              <button
+                key={r.tenantId}
+                onClick={() => handleSelect(r.tenantId)}
+                className="press-anim w-full text-left px-3 py-2.5 rounded-lg hover:bg-orange-50/60 transition group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 w-9 shrink-0">
+                    {rankColor && <span className="h-1.5 w-1.5 rounded-full" style={{ background: rankColor }} />}
+                    <span className={`text-[11px] tabular-nums font-semibold ${idx < 3 ? "text-slate-900" : "text-slate-400"}`}>#{idx + 1}</span>
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${barPct}%`, background: r.tenant.avatarColor }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-sm font-medium text-slate-900 truncate group-hover:text-orange-600">{r.tenant.name}</span>
+                      <span className="text-xs text-slate-500 tabular-nums shrink-0">{formatIndian(r.totalRequests)}</span>
                     </div>
-                    <span className="text-[10px] tabular-nums text-slate-500 w-10 text-right">{sharePct.toFixed(1)}%</span>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-orange-500" style={{ width: `${barPct}%` }} />
+                      </div>
+                      <span className="text-[10px] tabular-nums text-slate-500 w-10 text-right">{sharePct.toFixed(1)}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      <button
-        onClick={() => setShowAll((v) => !v)}
-        className="mt-3 text-xs font-medium text-orange-600 hover:text-orange-700"
-      >
-        {showAll ? "Show top 5" : `Show all ${all.length} tenants →`}
-      </button>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
     </section>
   );
 }
@@ -321,62 +363,81 @@ export function TopTenantsList() {
 /* =========================================================
    ZONE 4 LEFT — Throughput
 ========================================================= */
-export function ThroughputBlock() {
+export function ThroughputBlock({ singleLineOnly = false }: { singleLineOnly?: boolean }) {
   const { window, role, effectiveTenant } = useUsage();
   const tenants = useScopedTenants();
-  const isAllPlatform = role === "platform_admin" && !effectiveTenant;
+  const platformContext = !singleLineOnly && role === "platform_admin" && !effectiveTenant;
   const { snapshots } = useAggregate();
+
   const avgRps = +snapshots.reduce((a, s) => a + s.avgRps, 0).toFixed(2);
-  const peakRps = +(avgRps * 4.2).toFixed(2);
+  const ratio = 0.32; // mid of 25-40%
+  const peakRps = +(avgRps / ratio).toFixed(2);
+  const peakTs = snapshots[0]?.peakTimestamp ?? "Jun 9, 14:32";
+
+  const [breakdown, setBreakdown] = useState(false);
+  const top3 = useMemo(() => [...TENANTS].sort((a, b) => b.share - a.share).slice(0, 3), []);
 
   const data = useMemo(() => {
     const base = getTimeSeries(window, tenants);
-    if (isAllPlatform) {
-      const top3 = [...TENANTS].sort((a, b) => b.share - a.share).slice(0, 3);
+    if (platformContext && breakdown) {
       return base.map((p, i) => {
         const row: any = { label: p.label, total: p.rps };
         top3.forEach((t) => {
-          row[t.id] = +(p.rps * t.share * (0.8 + (i % 3) * 0.1)).toFixed(2);
+          const tSeries = getTenantRpsSeries(t, window);
+          row[t.id] = tSeries[i]?.rps ?? 0;
         });
         return row;
       });
     }
     return base.map((p) => ({ label: p.label, total: p.rps }));
-  }, [window, tenants, isAllPlatform]);
-
-  const top3 = [...TENANTS].sort((a, b) => b.share - a.share).slice(0, 3);
+  }, [window, tenants, platformContext, breakdown, top3]);
 
   return (
     <section>
-      <Eyebrow>Throughput</Eyebrow>
+      <Eyebrow right={
+        platformContext ? (
+          <button
+            onClick={() => setBreakdown((b) => !b)}
+            className={`text-[11px] font-medium px-2.5 py-1 rounded border transition ${
+              breakdown ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            {breakdown ? "Hide tenant breakdown" : "Break down by tenant"}
+          </button>
+        ) : null
+      }>Throughput</Eyebrow>
       <Card className="p-5">
-        <div className="flex items-end gap-8 mb-4">
+        <div className="flex flex-col gap-2 mb-4">
           <div>
             <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg RPS</div>
-            <div className="mt-1.5 text-[26px] leading-none font-bold text-slate-900 tabular-nums">{avgRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span></div>
+            <div className="mt-1 text-[26px] leading-none font-bold text-slate-900 tabular-nums">
+              {avgRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
+            </div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Peak RPS</div>
-            <div className="mt-1.5 text-[26px] leading-none font-bold text-slate-900 tabular-nums">{peakRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span></div>
+            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Peak</div>
+            <div className="mt-1 text-[20px] leading-none font-semibold text-slate-900 tabular-nums">
+              {peakRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s · {peakTs}</span>
+            </div>
           </div>
         </div>
-        {isAllPlatform && (
+        {platformContext && breakdown && (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-[11px] text-slate-600">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-slate-900" /> Platform</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-slate-900" /> Platform total</span>
             {top3.map((t) => (
               <span key={t.id} className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: t.avatarColor }} /> {t.name}</span>
             ))}
           </div>
         )}
-        <ResponsiveContainer width="100%" height={160}>
+        <ResponsiveContainer width="100%" height={220}>
           <LineChart data={data} margin={{ top: 5, right: 12, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} separator="  " />
-            <Line type="monotone" dataKey="total" stroke="#0F172A" strokeWidth={2} dot={false} />
-            {isAllPlatform && top3.map((t) => (
-              <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.avatarColor} strokeWidth={1.6} dot={false} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }} separator="  " />
+            <Line type="monotone" dataKey="total" stroke="#0F172A" strokeWidth={2} dot={false} isAnimationActive={false} />
+            {platformContext && breakdown && top3.map((t) => (
+              <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.avatarColor} strokeWidth={1.6} dot={false} isAnimationActive={false} />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -386,7 +447,7 @@ export function ThroughputBlock() {
 }
 
 /* =========================================================
-   ZONE 4 RIGHT — Tenant adoption (Platform Admin only)
+   ZONE 4 RIGHT — Tenant adoption (Platform only)
 ========================================================= */
 export function TenantAdoptionGrid() {
   const active24 = TENANTS.filter((t) => t.active24h).length;
@@ -395,24 +456,52 @@ export function TenantAdoptionGrid() {
   const newOnboard = TENANTS.filter((t) => t.newWithin7d).length;
 
   const items = [
-    { label: "Active 24h", value: active24, sub: `of ${TENANTS.length} tenants` },
-    { label: "Active 7 days", value: active7, sub: `of ${TENANTS.length} tenants` },
-    { label: "Active 30 days", value: active30, sub: `of ${TENANTS.length} tenants` },
-    { label: "New this week", value: newOnboard, sub: "newly onboarded" },
+    { label: "Active (24h)", value: active24, sub: "Rolling window" },
+    { label: "Active (7 days)", value: active7, sub: "Rolling window" },
+    { label: "Active (30 days)", value: active30, sub: "Rolling window" },
+    { label: "New this week", value: newOnboard, sub: "Onboarded" },
   ];
+
+  const top3 = [...TENANTS].sort((a, b) => b.share - a.share).slice(0, 3);
+  const top3Sum = top3.reduce((a, t) => a + t.share, 0);
+  const others = 1 - top3Sum;
 
   return (
     <section>
       <Eyebrow>Tenant adoption</Eyebrow>
       <Card className="p-5">
-        <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+        <div className="grid grid-cols-2 gap-y-5 gap-x-4">
           {items.map((it) => (
             <div key={it.label}>
               <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
               <div className="mt-1.5 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-              <div className="mt-1.5 text-[11px] text-slate-500">{it.sub}</div>
+              <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
             </div>
           ))}
+        </div>
+        <div className="mt-5 pt-4 border-t border-slate-100">
+          <div className="flex items-baseline justify-between mb-2">
+            <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">Usage concentration</div>
+            <div className="text-xs text-slate-700"><span className="font-semibold">Top 3 tenants</span> · {Math.round(top3Sum * 100)}% of platform</div>
+          </div>
+          <div className="flex h-2.5 rounded-full overflow-hidden bg-slate-100">
+            {top3.map((t) => (
+              <div key={t.id} style={{ width: `${t.share * 100}%`, background: t.avatarColor }} title={`${t.name}: ${Math.round(t.share * 100)}%`} />
+            ))}
+            <div style={{ width: `${others * 100}%`, background: "#E2E8F0" }} />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600">
+            {top3.map((t) => (
+              <span key={t.id} className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-sm" style={{ background: t.avatarColor }} />
+                {t.name} {Math.round(t.share * 100)}%
+              </span>
+            ))}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-sm bg-slate-300" />
+              Others {Math.round(others * 100)}%
+            </span>
+          </div>
         </div>
       </Card>
     </section>
@@ -420,7 +509,7 @@ export function TenantAdoptionGrid() {
 }
 
 /* =========================================================
-   ZONE 5 — Compare tenants (collapsed by default)
+   ZONE 5 — Cross-tenant comparison (stacked, request count)
 ========================================================= */
 export function CompareTenantsSection() {
   const { window } = useUsage();
@@ -450,10 +539,13 @@ export function CompareTenantsSection() {
     <section>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 hover:text-orange-600"
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-800"
       >
-        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        Compare tenants
+        <span className="inline-flex items-center gap-2">
+          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          {open ? "Collapse comparison" : "Compare tenants by service usage"}
+        </span>
+        <span className="text-xs text-slate-500">{selected.length} services selected</span>
       </button>
       {open && (
         <div className="mt-4">
@@ -489,18 +581,22 @@ export function CompareTenantsSection() {
                 );
               })}
             </div>
-            <ResponsiveContainer width="100%" height={44 * 10 + 40}>
+            <ResponsiveContainer width="100%" height={44 * 10 + 60}>
               <BarChart data={data} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v: number) => formatIndian(v)} separator="  " />
-                {selected.map((k) => {
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }} formatter={(v: number) => formatIndian(v)} separator="  " />
+                {selected.map((k, i) => {
                   const s = getServiceByKey(k);
-                  return <Bar key={k} dataKey={k} fill={s.color} radius={[0, 3, 3, 0]} />;
+                  const isLast = i === selected.length - 1;
+                  return <Bar key={k} dataKey={k} stackId="svc" fill={s.color} radius={isLast ? [0, 3, 3, 0] : 0} />;
                 })}
               </BarChart>
             </ResponsiveContainer>
+            <div className="mt-2 text-[11px] text-slate-500 italic">
+              Showing request count across selected services — not native units.
+            </div>
           </Card>
         </div>
       )}
