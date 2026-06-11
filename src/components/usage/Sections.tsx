@@ -570,7 +570,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
     [windowHours, isTenantScoped, tick]
   );
 
-  const peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
+  const _peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
 
   const subtitle = isTenantScoped
     ? `Requests per second for ${effectiveTenant!.name}`
