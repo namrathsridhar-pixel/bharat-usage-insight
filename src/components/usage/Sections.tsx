@@ -277,7 +277,7 @@ export function VolumeHealth() {
         </div>
         <div className="flex items-stretch -mt-1">
           <div className="w-5 shrink-0 flex items-center justify-center">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}>
               Failure rate %
             </span>
           </div>
