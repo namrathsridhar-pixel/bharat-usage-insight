@@ -296,10 +296,10 @@ export function getRpsData(
   return { points, avgRps, peakRps: +peakRps.toFixed(2), peakLabel, baseline };
 }
 
-/* ---------- usage concentration (always 30d) ---------- */
+/* ---------- usage concentration (across selected window) ---------- */
 export interface ConcentrationRow { id: string; name: string; color: string; requests: number; pct: number; }
-export function getUsageConcentration(): ConcentrationRow[] {
-  const rows = getFilteredData({ windowHours: 720 });
+export function getUsageConcentration(windowHours: WindowHours = 720): ConcentrationRow[] {
+  const rows = getFilteredData({ windowHours });
   const total = rows.reduce((a, r) => a + r.requests, 0) || 1;
   const out: ConcentrationRow[] = TENANTS.map((t) => {
     const requests = rows.filter((r) => r.tenantId === t.id).reduce((a, r) => a + r.requests, 0);
