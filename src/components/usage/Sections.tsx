@@ -625,6 +625,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
               {topTenants.map((t) => (
                 <div key={t.tenant.id} className="flex items-center py-2 text-sm">
                   <div className="flex-1 flex items-center gap-2.5 min-w-0">
+                    <span className="h-7 w-1.5 rounded-sm shrink-0" style={{ background: t.tenant.avatarColor }} aria-hidden />
                     <span
                       className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
                       style={{ background: t.tenant.avatarColor }}
@@ -632,7 +633,6 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
                     >
                       {t.tenant.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
                     </span>
-                    <span className="h-4 w-1 rounded-sm shrink-0" style={{ background: t.tenant.avatarColor }} />
                     <span className="text-slate-800 truncate">{t.tenant.name}</span>
                   </div>
                   <div className="w-24 text-right tabular-nums text-slate-900 font-medium">{t.avgRps}</div>
