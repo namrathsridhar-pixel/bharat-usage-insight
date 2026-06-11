@@ -152,9 +152,9 @@ export function PlatformAdoption() {
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
         <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-5 gap-x-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-5 gap-x-4 items-stretch">
             {items.map((it, i) => (
-              <div key={i}>
+              <div key={i} className="flex flex-col min-h-[110px]">
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
                 <div className="mt-1.5 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
                 {it.delta !== undefined && <div className="mt-1.5"><Delta pct={it.delta} /></div>}
