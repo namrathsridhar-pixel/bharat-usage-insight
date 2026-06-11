@@ -6,7 +6,7 @@ import {
   ChevronDown, BarChart3, Menu, UserCircle2, Check, Search, Grid3x3,
 } from "lucide-react";
 import { useUsage } from "@/lib/usage/context";
-import { TENANTS, type Plan } from "@/lib/usage/data";
+import { TENANTS, type TenantMeta } from "@/data/eventLog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const NAV_TOP = [
@@ -22,7 +22,7 @@ const NAV_TOP = [
   { icon: ShieldCheck, label: "PII Guardrail", to: "/pii" },
 ];
 
-const PLAN_STYLE: Record<Plan, string> = {
+const PLAN_STYLE: Record<TenantMeta["plan"], string> = {
   Enterprise: "bg-indigo-50 text-indigo-700 border-indigo-200",
   Pro: "bg-blue-50 text-blue-700 border-blue-200",
   Standard: "bg-slate-100 text-slate-700 border-slate-200",
@@ -54,17 +54,17 @@ function SidebarTenantSwitcher() {
       <PopoverTrigger asChild>
         <button
           disabled={disabled}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition text-left disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition text-left disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {effectiveTenant ? (
-            <Avatar name={effectiveTenant.name} color={effectiveTenant.avatarColor} size={26} />
+            <Avatar name={effectiveTenant.name} color={effectiveTenant.avatarColor} size={28} />
           ) : (
-            <div className="h-[26px] w-[26px] rounded-full bg-slate-100 grid place-items-center text-slate-600">
+            <div className="h-7 w-7 rounded-full bg-slate-100 grid place-items-center text-slate-600">
               <Grid3x3 className="h-3.5 w-3.5" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="text-[12px] uppercase tracking-wider text-slate-400 font-medium leading-none">Context</div>
+            <div className="text-[10px] uppercase tracking-[0.12em] text-slate-400 font-medium leading-none">Viewing</div>
             <div className="mt-0.5 text-sm font-semibold text-slate-900 truncate">
               {effectiveTenant ? effectiveTenant.name : "All Tenants"}
             </div>
@@ -84,7 +84,7 @@ function SidebarTenantSwitcher() {
             />
           </div>
         </div>
-        <div className="max-h-[400px] overflow-y-auto py-1">
+        <div className="max-h-[420px] overflow-y-auto py-1">
           <button
             onClick={() => { setSelectedTenantId(null); setOpen(false); }}
             className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
@@ -96,25 +96,28 @@ function SidebarTenantSwitcher() {
             {!selectedTenantId && <Check className="h-4 w-4 text-orange-500" />}
           </button>
           <div className="h-px bg-slate-100 my-1" />
-          {filtered.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => { setSelectedTenantId(t.id); setOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
-            >
-              <Avatar name={t.name} color={t.avatarColor} size={32} />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-slate-900 truncate flex items-center gap-1.5">
-                  {t.name}
-                  {t.active24h && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+          {filtered.map((t) => {
+            const active24 = t.lastActiveHour >= 720 - 24;
+            return (
+              <button
+                key={t.id}
+                onClick={() => { setSelectedTenantId(t.id); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
+              >
+                <Avatar name={t.name} color={t.avatarColor} size={32} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-900 truncate flex items-center gap-1.5">
+                    {t.name}
+                    {active24 && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
+                  </div>
+                  <div className="mt-0.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan]}`}>{t.plan}</span>
+                  </div>
                 </div>
-                <div className="mt-0.5">
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan]}`}>{t.plan}</span>
-                </div>
-              </div>
-              {selectedTenantId === t.id && <Check className="h-4 w-4 text-orange-500" />}
-            </button>
-          ))}
+                {selectedTenantId === t.id && <Check className="h-4 w-4 text-orange-500" />}
+              </button>
+            );
+          })}
         </div>
       </PopoverContent>
     </Popover>
@@ -136,7 +139,6 @@ export function PortalShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Tenant switcher */}
         <div className="px-3 pt-3 pb-2 border-b border-slate-200">
           <SidebarTenantSwitcher />
         </div>
