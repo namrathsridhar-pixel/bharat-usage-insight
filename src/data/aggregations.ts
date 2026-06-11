@@ -144,9 +144,14 @@ export interface ServiceRow {
   service: ServiceMeta;
   requests: number; successful: number; failed: number;
   nativeUnits: number; successRate: number; trendPct: number;
+  prevRequests: number;
 }
-export function getServiceBreakdown(rows: HourRecord[], windowHours: WindowHours): ServiceRow[] {
-  const prevRows = getFilteredData({ windowHours }).filter((r) => r.hour < TOTAL_HOURS - windowHours && r.hour >= TOTAL_HOURS - windowHours * 2);
+export function getServiceBreakdown(rows: HourRecord[], windowHours: WindowHours, tenantId?: string): ServiceRow[] {
+  const prevRows = BASE_HOURLY_DATA.filter((r) =>
+    r.hour < TOTAL_HOURS - windowHours &&
+    r.hour >= TOTAL_HOURS - windowHours * 2 &&
+    (!tenantId || r.tenantId === tenantId)
+  );
   const prevBySvc: Record<string, number> = {};
   for (const r of prevRows) prevBySvc[r.service] = (prevBySvc[r.service] || 0) + r.requests;
 
@@ -162,6 +167,7 @@ export function getServiceBreakdown(rows: HourRecord[], windowHours: WindowHours
       service: s, requests, successful, failed, nativeUnits,
       successRate: requests ? successful / requests : 0,
       trendPct: +trendPct.toFixed(1),
+      prevRequests: prev,
     };
   });
   out.sort((a, b) => b.requests - a.requests);
