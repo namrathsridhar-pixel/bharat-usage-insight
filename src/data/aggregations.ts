@@ -308,3 +308,77 @@ export function getCompareData(windowHours: WindowHours, services: string[]): Co
     return row;
   });
 }
+
+/* ---------- service sparkline (last 5 buckets) ---------- */
+export function getServiceSparkline(serviceKey: string, windowHours: WindowHours): { v: number; label: string }[] {
+  const g = granularityFor(windowHours);
+  const allSvc = BASE_HOURLY_DATA.filter((r) => r.service === serviceKey);
+  const out: { v: number; label: string }[] = [];
+  if (g === "5m") {
+    // synthesize 5 buckets across last hour
+    const lastHour = TOTAL_HOURS - 1;
+    const hr = allSvc.filter((r) => r.hour === lastHour);
+    const total = hr.reduce((a, r) => a + r.requests, 0);
+    for (let i = 0; i < 5; i++) {
+      const w = 0.6 + Math.sin(((i + 1) / 6) * Math.PI) * 0.8;
+      out.push({ v: Math.round((total / 5) * w), label: `${i * 12}–${(i + 1) * 12}m ago` });
+    }
+    return out;
+  }
+  if (g === "1h") {
+    for (let i = 4; i >= 0; i--) {
+      const h = TOTAL_HOURS - 1 - i;
+      const hr = allSvc.filter((r) => r.hour === h);
+      out.push({
+        v: hr.reduce((a, r) => a + r.requests, 0),
+        label: `${String(h % 24).padStart(2, "0")}:00`,
+      });
+    }
+    return out;
+  }
+  // daily — last 5 days
+  for (let i = 4; i >= 0; i--) {
+    const hStart = TOTAL_HOURS - (i + 1) * 24;
+    const hr = allSvc.filter((r) => r.hour >= hStart && r.hour < hStart + 24);
+    out.push({
+      v: hr.reduce((a, r) => a + r.requests, 0),
+      label: `${i === 0 ? "today" : i + "d ago"}`,
+    });
+  }
+  return out;
+}
+
+/* ---------- top tenants by throughput ---------- */
+export function getTopTenantsByRps(windowHours: WindowHours, n = 3) {
+  const rows = getFilteredData({ windowHours });
+  const arr = TENANTS.map((t) => {
+    const tr = rows.filter((r) => r.tenantId === t.id);
+    const reqs = tr.reduce((a, r) => a + r.requests, 0);
+    return {
+      tenant: t,
+      avgRps: +(reqs / (windowHours * 3600)).toFixed(2),
+      peakRps: tr.reduce((a, r) => Math.max(a, r.peakRps), 0),
+    };
+  });
+  arr.sort((a, b) => b.avgRps - a.avgRps);
+  return arr.slice(0, n);
+}
+
+/* ---------- heatmap matrix ---------- */
+export interface HeatmapCell { tenantId: string; serviceKey: string; requests: number; pctOfTenant: number; }
+export function getHeatmap(windowHours: WindowHours, services: string[]) {
+  const rows = getFilteredData({ windowHours });
+  const matrix: Record<string, Record<string, number>> = {};
+  const tenantTotals: Record<string, number> = {};
+  for (const t of TENANTS) {
+    matrix[t.id] = {};
+    for (const s of services) {
+      const v = rows.filter((r) => r.tenantId === t.id && r.service === s).reduce((a, r) => a + r.requests, 0);
+      matrix[t.id][s] = v;
+      tenantTotals[t.id] = (tenantTotals[t.id] || 0) + v;
+    }
+  }
+  let max = 0;
+  for (const t of TENANTS) for (const s of services) max = Math.max(max, matrix[t.id][s]);
+  return { matrix, tenantTotals, max };
+}

@@ -1,8 +1,8 @@
 import { useUsage } from "@/lib/usage/context";
 import { useMemo, useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine,
-  ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart,
+  ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
 } from "recharts";
 import {
   ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight,
@@ -15,7 +15,8 @@ import {
   getFilteredData, getTotals, getActiveTenants, getActiveServices,
   getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
-  getUsageConcentration, getPrevTotals, getCompareData,
+  getUsageConcentration, getPrevTotals,
+  getServiceSparkline, getTopTenantsByRps, getHeatmap,
   windowToHours, formatIndian, formatCompact,
   type WindowHours,
 } from "@/data/aggregations";
@@ -46,6 +47,26 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
       {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {Math.abs(pct).toFixed(1)}% vs previous
     </span>
+  );
+}
+
+function Sparkline({ serviceKey, color, windowHours }: { serviceKey: string; color: string; windowHours: WindowHours }) {
+  const data = useMemo(() => getServiceSparkline(serviceKey, windowHours), [serviceKey, windowHours]);
+  return (
+    <div style={{ width: 60, height: 28 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 1, right: 0, left: 0, bottom: 0 }}>
+          <Tooltip
+            cursor={{ fill: "rgba(0,0,0,0.04)" }}
+            contentStyle={{ fontSize: 11, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", padding: "4px 8px" }}
+            formatter={(v: number) => [formatIndian(v), "Requests"]}
+            labelFormatter={(_l, p: any) => p?.[0]?.payload?.label ?? ""}
+            separator="  "
+          />
+          <Bar dataKey="v" fill={color} radius={[1, 1, 0, 0]} isAnimationActive={false} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -115,6 +136,17 @@ export function PlatformAdoption() {
     { label: "New this week",  value: getNewTenants7d(),     sub: "onboarded" },
   ];
 
+  // donut: top 5 tenants + Others
+  const top5 = concentration.slice(0, 5);
+  const rest = concentration.slice(5);
+  const othersPct = rest.reduce((a, r) => a + r.pct, 0);
+  const othersReq = rest.reduce((a, r) => a + r.requests, 0);
+  const donut = [
+    ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
+    ...(rest.length ? [{ name: "Others", value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+  ];
+  const top3Pct = concentration.slice(0, 3).reduce((a, r) => a + r.pct, 0);
+
   return (
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
@@ -131,25 +163,45 @@ export function PlatformAdoption() {
           </div>
           <div className="md:border-l md:border-slate-100 md:pl-6">
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
-              Usage distribution <span className="text-slate-400 normal-case font-normal">· last 30 days</span>
+              Usage concentration <span className="text-slate-400 normal-case font-normal">· last 30 days</span>
             </div>
-            <div className="flex h-7 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-              {concentration.map((c) => (
-                <div
-                  key={c.id}
-                  style={{ width: `${c.pct}%`, background: c.color }}
-                  title={`${c.name} · ${c.pct.toFixed(1)}% · ${formatIndian(c.requests)} req`}
-                />
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-slate-600">
-              {concentration.map((c) => (
-                <span key={c.id} className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-sm" style={{ background: c.color }} />
-                  <span className="text-slate-700">{c.name}</span>
-                  <span className="tabular-nums text-slate-500">{c.pct.toFixed(1)}%</span>
-                </span>
-              ))}
+            <div className="flex items-center gap-5">
+              <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
+                <ResponsiveContainer width={180} height={180}>
+                  <PieChart>
+                    <Pie
+                      data={donut}
+                      dataKey="value"
+                      innerRadius={56}
+                      outerRadius={86}
+                      paddingAngle={1}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                    >
+                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                      separator="  "
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{top3Pct.toFixed(0)}%</div>
+                  <div className="text-[10px] text-slate-500 mt-1">top 3 tenants</div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 space-y-1.5">
+                {donut.map((d) => (
+                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                    <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
+                    <span className="flex-1 text-slate-700 truncate">{d.name}</span>
+                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -173,6 +225,11 @@ export function VolumeHealth() {
   const failureRate = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
 
+  const chartWithFailRate = useMemo(
+    () => chart.map((p) => ({ ...p, failRate: p.total ? +((p.failed / p.total) * 100).toFixed(2) : 0 })),
+    [chart]
+  );
+
   return (
     <section>
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
@@ -194,26 +251,48 @@ export function VolumeHealth() {
         </Card>
       </div>
       <Card className="p-5">
-        <div className="flex items-center gap-5 mb-3 text-xs text-slate-600">
-          <span className="inline-flex items-center gap-1.5"><span className="h-[3px] w-4 rounded bg-[#3B82F6]" /> Total requests</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-[2px] w-4 rounded bg-[#EF4444]" /> Failed requests</span>
+        <div className="relative">
+          <div className="absolute top-2 left-3 z-10 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Requests</div>
+          <ResponsiveContainer width="100%" height={140}>
+            <AreaChart data={chartWithFailRate} margin={{ top: 22, right: 12, left: -5, bottom: 0 }} syncId="vh">
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
+              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                formatter={(v: number) => [formatIndian(v), "Requests"]}
+                labelFormatter={(l) => `Time  ${l}`}
+                separator="  "
+              />
+              <Area type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chart} margin={{ top: 5, right: 12, left: -5, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <YAxis yAxisId="L" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-            <YAxis yAxisId="R" orientation="right" tick={{ fontSize: 11, fill: "#EF4444" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-            <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-              formatter={(v: number, n: string) => [formatIndian(v), n === "total" ? "Total" : "Failed"]}
-              labelFormatter={(l) => `Time  ${l}`}
-              separator="  "
-            />
-            <Line yAxisId="L" type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2.4} dot={false} isAnimationActive={false} />
-            <Line yAxisId="R" type="monotone" dataKey="failed" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="relative -mt-1">
+          <div className="absolute top-1 left-3 z-10 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Failure rate %</div>
+          <ResponsiveContainer width="100%" height={92}>
+            <LineChart data={chartWithFailRate} margin={{ top: 16, right: 12, left: -5, bottom: 0 }} syncId="vh">
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+              <YAxis
+                domain={[0, 10]}
+                ticks={[0, 5, 10]}
+                tick={{ fontSize: 11, fill: "#64748B" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                formatter={(v: number) => [`${v.toFixed(2)}%`, "Failure rate"]}
+                labelFormatter={(l) => `Time  ${l}`}
+                separator="  "
+              />
+              <ReferenceLine y={0} stroke="#E2E8F0" strokeWidth={1} />
+              <Line type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </Card>
     </section>
   );
@@ -271,7 +350,7 @@ export function ServiceBreakdown() {
                 <Th k="nativeUnits">Native units</Th>
                 <Th k="successRate">Success %</Th>
                 <Th k="failed">Failed</Th>
-                <th className="py-3 px-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">vs prev period</th>
+                <th className="py-3 px-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">Trend (5 periods)</th>
               </tr>
             </thead>
             <tbody>
@@ -289,8 +368,6 @@ export function ServiceBreakdown() {
                 }
                 const sr = r.successRate * 100;
                 const srClr = sr >= 95 ? "text-emerald-700" : sr >= 90 ? "text-amber-600" : "text-rose-600";
-                const trendUp = r.trendPct >= 0;
-                const trendZero = r.trendPct === 0;
                 return (
                   <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
                     <td className="py-3 pl-4 pr-3 relative">
@@ -304,14 +381,10 @@ export function ServiceBreakdown() {
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
                     <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatIndian(r.failed)}</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-xs">
-                      {trendZero ? (
-                        <span className="text-slate-400">— 0%</span>
-                      ) : (
-                        <span className={trendUp ? "text-emerald-600" : "text-rose-600"}>
-                          {trendUp ? "↑" : "↓"} {Math.abs(r.trendPct).toFixed(1)}%
-                        </span>
-                      )}
+                    <td className="py-3 px-3 text-right">
+                      <div className="inline-block">
+                        <Sparkline serviceKey={r.service.key} color={r.service.color} windowHours={windowHours} />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -406,28 +479,23 @@ export function TenantRanking() {
 /* =========================================================
    ZONE 5 — Throughput & Load
 ========================================================= */
-export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: boolean }) {
+export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { singleLineOnly?: boolean }) {
   const { windowHours, tenantId } = useScope();
   const { tick, window, effectiveTenant } = useUsage();
   const isDaily = windowHours === 168 || windowHours === 720;
-  const [breakdown, setBreakdown] = useState(false);
   const isTenantScoped = !!effectiveTenant;
-  const showBreakdownBtn = !singleLineOnly && !isTenantScoped;
 
-  const breakdownIds = showBreakdownBtn && breakdown ? ["t1", "t2", "t3"] : [];
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const { points, avgRps, peakRps, peakLabel, baseline } = useMemo(
-    () => getRpsData(rows, windowHours, breakdownIds),
-    [rows, windowHours, breakdownIds.join(",")]
+    () => getRpsData(rows, windowHours, []),
+    [rows, windowHours]
+  );
+  const topTenants = useMemo(
+    () => (isTenantScoped ? [] : getTopTenantsByRps(windowHours, 3)),
+    [windowHours, isTenantScoped, tick]
   );
 
   const peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
-
-  const tenantSwatches = [
-    { id: "t1", name: "Bhashini", color: "#F97316" },
-    { id: "t2", name: "Ministry of Education", color: "#3B82F6" },
-    { id: "t3", name: "IIIT Hyderabad", color: "#10B981" },
-  ];
 
   const subtitle = isTenantScoped
     ? `Requests per second for ${effectiveTenant!.name}`
@@ -435,19 +503,7 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
 
   return (
     <section>
-      <Eyebrow
-        subtitle={subtitle}
-        right={showBreakdownBtn && (
-          <button
-            onClick={() => setBreakdown((b) => !b)}
-            className={`text-[11px] font-medium px-2.5 py-1 rounded border transition ${
-              breakdown ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            {breakdown ? "Hide tenant breakdown" : "Break down by tenant"}
-          </button>
-        )}
-      >Throughput &amp; load</Eyebrow>
+      <Eyebrow subtitle={subtitle}>Throughput &amp; load</Eyebrow>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <Card className="p-4">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg RPS</div>
@@ -463,14 +519,6 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
         </Card>
       </div>
       <Card className="p-5">
-        {showBreakdownBtn && breakdown && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-[11px] text-slate-600">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#1F2937]" /> Platform total</span>
-            {tenantSwatches.map((t) => (
-              <span key={t.id} className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: t.color }} /> {t.name}</span>
-            ))}
-          </div>
-        )}
         <ResponsiveContainer width="100%" height={220}>
           {isDaily ? (
             <BarChart data={points} margin={{ top: 10, right: 40, left: -10, bottom: 0 }}>
@@ -491,12 +539,32 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
               <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
               <Line type="monotone" dataKey="platformRps" stroke="#1F2937" strokeWidth={2} dot={false} isAnimationActive={false} name="Platform total" />
-              {showBreakdownBtn && breakdown && tenantSwatches.map((t) => (
-                <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color} strokeWidth={1.6} dot={false} isAnimationActive={false} name={t.name} />
-              ))}
             </LineChart>
           )}
         </ResponsiveContainer>
+
+        {!isTenantScoped && topTenants.length > 0 && (
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 mb-2">Top tenants by throughput</div>
+            <div className="divide-y divide-slate-100">
+              <div className="flex items-center text-[10px] uppercase tracking-wider text-slate-400 pb-1.5">
+                <div className="flex-1">Tenant</div>
+                <div className="w-24 text-right tabular-nums">Avg RPS</div>
+                <div className="w-24 text-right tabular-nums">Peak RPS</div>
+              </div>
+              {topTenants.map((t) => (
+                <div key={t.tenant.id} className="flex items-center py-2 text-sm">
+                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.tenant.avatarColor }} />
+                    <span className="text-slate-800 truncate">{t.tenant.name}</span>
+                  </div>
+                  <div className="w-24 text-right tabular-nums text-slate-900 font-medium">{t.avgRps}</div>
+                  <div className="w-24 text-right tabular-nums text-slate-600">{t.peakRps}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Card>
     </section>
   );
@@ -517,28 +585,50 @@ export function ServiceMix() {
     }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
   }, [rows]);
 
+  const shortName = (effectiveTenant?.name ?? "")
+    .split(/\s+/).map((w) => w[0]).join("").slice(0, 4).toUpperCase();
+
   return (
     <section>
       <Eyebrow subtitle={`Service mix · ${effectiveTenant?.name ?? ""}`}>Service share</Eyebrow>
       <Card className="p-5">
-        <div className="flex h-7 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-          {segments.map((s) => (
-            <div
-              key={s.key}
-              style={{ width: `${s.pct}%`, background: s.color }}
-              title={`${s.name} · ${formatIndian(s.requests)} req · ${s.pct.toFixed(1)}%`}
-            />
-          ))}
-        </div>
-        <div className="mt-4 space-y-2">
-          {segments.map((s) => (
-            <div key={s.key} className="flex items-center gap-2 text-xs">
-              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-              <span className="flex-1 text-slate-700 truncate">{s.name}</span>
-              <span className="tabular-nums text-slate-900 font-medium">{formatIndian(s.requests)}</span>
-              <span className="tabular-nums text-slate-500 w-12 text-right">{s.pct.toFixed(1)}%</span>
+        <div className="flex items-center gap-5">
+          <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
+            <ResponsiveContainer width={200} height={200}>
+              <PieChart>
+                <Pie
+                  data={segments}
+                  dataKey="requests"
+                  innerRadius={62}
+                  outerRadius={96}
+                  paddingAngle={1}
+                  stroke="#fff"
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                >
+                  {segments.map((s) => <Cell key={s.key} fill={s.color} />)}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                  formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                  separator="  "
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <div className="text-[16px] font-bold text-slate-900 leading-tight">{shortName}</div>
+              <div className="text-[10px] text-slate-500 mt-1">services</div>
             </div>
-          ))}
+          </div>
+          <div className="flex-1 min-w-0 space-y-1.5">
+            {segments.map((s) => (
+              <div key={s.key} className="flex items-center gap-2 text-[11px]">
+                <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                <span className="flex-1 text-slate-700 truncate">{s.name}</span>
+                <span className="tabular-nums text-slate-500">{s.pct.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </Card>
     </section>
@@ -546,8 +636,16 @@ export function ServiceMix() {
 }
 
 /* =========================================================
-   ZONE 6 — Compare tenants / Service usage breakdown
+   ZONE 6 — Heatmap (all tenants) / Service breakdown (scoped)
 ========================================================= */
+const HEAT_RAMP = ["#FFFFFF", "#FFEDD5", "#FED7AA", "#FDBA74", "#FB923C", "#F97316", "#EA580C"];
+function heatColor(v: number, max: number) {
+  if (max <= 0 || v <= 0) return HEAT_RAMP[0];
+  const r = v / max;
+  const idx = Math.min(HEAT_RAMP.length - 1, Math.max(1, Math.ceil(r * (HEAT_RAMP.length - 1))));
+  return HEAT_RAMP[idx];
+}
+
 export function CompareTenants() {
   const { windowHours, tenantId } = useScope();
   const { effectiveTenant, tick } = useUsage();
@@ -555,7 +653,10 @@ export function CompareTenants() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
 
-  const data = useMemo(() => getCompareData(windowHours, selected), [windowHours, selected]);
+  const heat = useMemo(
+    () => (!isTenantScoped ? getHeatmap(windowHours, selected) : null),
+    [isTenantScoped, windowHours, selected]
+  );
 
   const scopedRows = useMemo(
     () => (isTenantScoped ? getFilteredData({ windowHours, tenantId }) : []),
@@ -563,12 +664,15 @@ export function CompareTenants() {
   );
   const scopedData = useMemo(() => {
     if (!isTenantScoped) return [];
-    return SERVICES.map((s) => ({
-      key: s.key,
-      name: s.name,
-      color: s.color,
-      requests: scopedRows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0),
-    })).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+    return SERVICES.map((s) => {
+      const r = scopedRows.filter((x) => x.service === s.key);
+      return {
+        key: s.key, name: s.name, color: s.color,
+        requests: r.reduce((a, x) => a + x.requests, 0),
+        nativeUnits: r.reduce((a, x) => a + x.nativeUnits, 0),
+        unitShort: s.unitShort,
+      };
+    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
   }, [isTenantScoped, scopedRows]);
 
   function toggle(k: string) {
@@ -576,6 +680,7 @@ export function CompareTenants() {
   }
 
   const triggerLabel = isTenantScoped ? "Service usage breakdown" : "Usage by tenant & service";
+  const maxTenantTotal = heat ? Math.max(1, ...Object.values(heat.tenantTotals)) : 1;
 
   return (
     <section>
@@ -596,12 +701,28 @@ export function CompareTenants() {
               <Eyebrow subtitle={`Request volume by service for ${effectiveTenant!.name}`}>Service usage breakdown</Eyebrow>
               <Card className="p-5">
                 <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
-                  <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
+                  <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 110, left: 30, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => [formatIndian(v), "Requests"]} separator="  " />
-                    <Bar dataKey="requests" radius={[0, 3, 3, 0]}>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [
+                        `${formatIndian(v)} req · ${formatCompact(p.payload.nativeUnits)} ${p.payload.unitShort}`,
+                        "Usage",
+                      ]}
+                      separator="  "
+                    />
+                    <Bar dataKey="requests" radius={[0, 3, 3, 0]}
+                      label={{
+                        position: "right", fontSize: 11, fill: "#475569",
+                        formatter: (_v: any, _n: any, p: any) => {
+                          const d = p?.payload;
+                          if (!d) return "";
+                          return `${formatIndian(d.requests)} req · ${formatCompact(d.nativeUnits)} ${d.unitShort}`;
+                        },
+                      }}
+                    >
                       {scopedData.map((s) => <Cell key={s.key} fill={s.color} />)}
                     </Bar>
                   </BarChart>
@@ -611,7 +732,7 @@ export function CompareTenants() {
           ) : (
             <>
               <Eyebrow
-                subtitle="Compare consumption across tenants and services"
+                subtitle="Heatmap of request volume per tenant per service"
                 right={
                   <Popover>
                     <PopoverTrigger asChild>
@@ -637,33 +758,76 @@ export function CompareTenants() {
                   </Popover>
                 }
               >Usage by tenant &amp; service</Eyebrow>
-              <Card className="p-5">
-                <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 text-xs">
-                  {selected.map((k) => {
-                    const s = SERVICES.find((x) => x.key === k)!;
-                    return (
-                      <span key={k} className="inline-flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-                        {s.name}
-                      </span>
-                    );
-                  })}
-                </div>
-                <ResponsiveContainer width="100%" height={44 * 10 + 60}>
-                  <BarChart data={data} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => formatIndian(v)} separator="  " />
-                    {selected.map((k, i) => {
-                      const s = SERVICES.find((x) => x.key === k)!;
-                      const isLast = i === selected.length - 1;
-                      return <Bar key={k} dataKey={k} stackId="svc" fill={s.color} radius={isLast ? [0, 3, 3, 0] : 0} />;
+              <Card className="p-5 overflow-x-auto">
+                <table className="w-full border-collapse text-[11px]">
+                  <thead>
+                    <tr>
+                      <th className="text-left font-semibold text-slate-500 uppercase tracking-wider pb-2 pr-3 align-bottom" style={{ minWidth: 160 }}>Tenant</th>
+                      {selected.map((k) => {
+                        const s = SERVICES.find((x) => x.key === k)!;
+                        return (
+                          <th key={k} className="px-1 pb-2 align-bottom" style={{ minWidth: 64 }}>
+                            <div className="inline-flex flex-col items-center gap-1">
+                              <span className="h-1.5 w-6 rounded-sm" style={{ background: s.color }} />
+                              <span className="text-slate-600 font-medium whitespace-nowrap" style={{ writingMode: "horizontal-tb" }}>{s.name}</span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th className="text-right font-semibold text-slate-500 uppercase tracking-wider pb-2 pl-3 align-bottom" style={{ minWidth: 140 }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TENANTS.map((t) => {
+                      const total = heat!.tenantTotals[t.id] || 0;
+                      return (
+                        <tr key={t.id} className="border-t border-slate-100">
+                          <td className="py-1 pr-3">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.avatarColor }} />
+                              <span className="text-slate-800 text-xs truncate">{t.name}</span>
+                            </div>
+                          </td>
+                          {selected.map((k) => {
+                            const v = heat!.matrix[t.id][k];
+                            const bg = heatColor(v, heat!.max);
+                            const dark = v / heat!.max > 0.55;
+                            const pct = total ? (v / total) * 100 : 0;
+                            const svc = SERVICES.find((x) => x.key === k)!;
+                            return (
+                              <td key={k} className="p-0.5">
+                                <div
+                                  className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
+                                  style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
+                                  title={`${t.name} · ${svc.name} · ${formatIndian(v)} req · ${pct.toFixed(1)}% of tenant`}
+                                >
+                                  {v > 0 ? formatCompact(v) : ""}
+                                </div>
+                              </td>
+                            );
+                          })}
+                          <td className="pl-3 py-1">
+                            <div className="flex items-center gap-2 justify-end">
+                              <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
+                              </div>
+                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatIndian(total)}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
                     })}
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-2 text-[11px] text-slate-500 italic">
-                  Showing request count. Native units vary by service.
+                  </tbody>
+                </table>
+                <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
+                  <span className="italic">Colour intensity = request volume. Hover any cell for details.</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>Low</span>
+                    {HEAT_RAMP.map((c, i) => (
+                      <span key={i} className="inline-block h-2.5 w-4 border border-slate-200" style={{ background: c }} />
+                    ))}
+                    <span>High</span>
+                  </span>
                 </div>
               </Card>
             </>
