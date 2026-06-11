@@ -295,7 +295,7 @@ export function ServiceBreakdown() {
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
-  const services = useMemo(() => getServiceBreakdown(rows, windowHours), [rows, windowHours]);
+  const services = useMemo(() => getServiceBreakdown(rows, windowHours, tenantId), [rows, windowHours, tenantId]);
   const [sortKey, setSortKey] = useState<SortKey>("requests");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
