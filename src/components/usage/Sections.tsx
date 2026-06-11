@@ -116,6 +116,17 @@ export function PlatformAdoption() {
     { label: "New this week",  value: getNewTenants7d(),     sub: "onboarded" },
   ];
 
+  // donut: top 5 tenants + Others
+  const top5 = concentration.slice(0, 5);
+  const rest = concentration.slice(5);
+  const othersPct = rest.reduce((a, r) => a + r.pct, 0);
+  const othersReq = rest.reduce((a, r) => a + r.requests, 0);
+  const donut = [
+    ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
+    ...(rest.length ? [{ name: "Others", value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+  ];
+  const top3Pct = concentration.slice(0, 3).reduce((a, r) => a + r.pct, 0);
+
   return (
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
@@ -132,25 +143,45 @@ export function PlatformAdoption() {
           </div>
           <div className="md:border-l md:border-slate-100 md:pl-6">
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
-              Usage distribution <span className="text-slate-400 normal-case font-normal">· last 30 days</span>
+              Usage concentration <span className="text-slate-400 normal-case font-normal">· last 30 days</span>
             </div>
-            <div className="flex h-7 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-              {concentration.map((c) => (
-                <div
-                  key={c.id}
-                  style={{ width: `${c.pct}%`, background: c.color }}
-                  title={`${c.name} · ${c.pct.toFixed(1)}% · ${formatIndian(c.requests)} req`}
-                />
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-slate-600">
-              {concentration.map((c) => (
-                <span key={c.id} className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-sm" style={{ background: c.color }} />
-                  <span className="text-slate-700">{c.name}</span>
-                  <span className="tabular-nums text-slate-500">{c.pct.toFixed(1)}%</span>
-                </span>
-              ))}
+            <div className="flex items-center gap-5">
+              <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
+                <ResponsiveContainer width={180} height={180}>
+                  <PieChart>
+                    <Pie
+                      data={donut}
+                      dataKey="value"
+                      innerRadius={56}
+                      outerRadius={86}
+                      paddingAngle={1}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                    >
+                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                      separator="  "
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{top3Pct.toFixed(0)}%</div>
+                  <div className="text-[10px] text-slate-500 mt-1">top 3 tenants</div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 space-y-1.5">
+                {donut.map((d) => (
+                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                    <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
+                    <span className="flex-1 text-slate-700 truncate">{d.name}</span>
+                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
