@@ -408,11 +408,13 @@ export function TenantRanking() {
 ========================================================= */
 export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: boolean }) {
   const { windowHours, tenantId } = useScope();
-  const { tick, window } = useUsage();
+  const { tick, window, effectiveTenant } = useUsage();
   const isDaily = windowHours === 168 || windowHours === 720;
   const [breakdown, setBreakdown] = useState(false);
+  const isTenantScoped = !!effectiveTenant;
+  const showBreakdownBtn = !singleLineOnly && !isTenantScoped;
 
-  const breakdownIds = !singleLineOnly && breakdown ? ["t1", "t2", "t3"] : [];
+  const breakdownIds = showBreakdownBtn && breakdown ? ["t1", "t2", "t3"] : [];
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const { points, avgRps, peakRps, peakLabel, baseline } = useMemo(
     () => getRpsData(rows, windowHours, breakdownIds),
@@ -427,11 +429,15 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
     { id: "t3", name: "IIIT Hyderabad", color: "#10B981" },
   ];
 
+  const subtitle = isTenantScoped
+    ? `Requests per second for ${effectiveTenant!.name}`
+    : "Requests per second across the selected time window";
+
   return (
     <section>
       <Eyebrow
-        subtitle="Requests per second across the selected time window"
-        right={!singleLineOnly && (
+        subtitle={subtitle}
+        right={showBreakdownBtn && (
           <button
             onClick={() => setBreakdown((b) => !b)}
             className={`text-[11px] font-medium px-2.5 py-1 rounded border transition ${
@@ -457,7 +463,7 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
         </Card>
       </div>
       <Card className="p-5">
-        {!singleLineOnly && breakdown && (
+        {showBreakdownBtn && breakdown && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-[11px] text-slate-600">
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#1F2937]" /> Platform total</span>
             {tenantSwatches.map((t) => (
@@ -485,7 +491,7 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
               <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
               <Line type="monotone" dataKey="platformRps" stroke="#1F2937" strokeWidth={2} dot={false} isAnimationActive={false} name="Platform total" />
-              {!singleLineOnly && breakdown && tenantSwatches.map((t) => (
+              {showBreakdownBtn && breakdown && tenantSwatches.map((t) => (
                 <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color} strokeWidth={1.6} dot={false} isAnimationActive={false} name={t.name} />
               ))}
             </LineChart>
@@ -497,18 +503,79 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
 }
 
 /* =========================================================
-   ZONE 6 — Compare tenants (collapsed)
+   ZONE 4 RIGHT (scoped) — Service mix for one tenant
+========================================================= */
+export function ServiceMix() {
+  const { windowHours, tenantId } = useScope();
+  const { tick, effectiveTenant } = useUsage();
+  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const segments = useMemo(() => {
+    const total = rows.reduce((a, r) => a + r.requests, 0) || 1;
+    return SERVICES.map((s) => {
+      const requests = rows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0);
+      return { key: s.key, name: s.name, color: s.color, requests, pct: (requests / total) * 100 };
+    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+  }, [rows]);
+
+  return (
+    <section>
+      <Eyebrow subtitle={`Service mix · ${effectiveTenant?.name ?? ""}`}>Service share</Eyebrow>
+      <Card className="p-5">
+        <div className="flex h-7 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
+          {segments.map((s) => (
+            <div
+              key={s.key}
+              style={{ width: `${s.pct}%`, background: s.color }}
+              title={`${s.name} · ${formatIndian(s.requests)} req · ${s.pct.toFixed(1)}%`}
+            />
+          ))}
+        </div>
+        <div className="mt-4 space-y-2">
+          {segments.map((s) => (
+            <div key={s.key} className="flex items-center gap-2 text-xs">
+              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+              <span className="flex-1 text-slate-700 truncate">{s.name}</span>
+              <span className="tabular-nums text-slate-900 font-medium">{formatIndian(s.requests)}</span>
+              <span className="tabular-nums text-slate-500 w-12 text-right">{s.pct.toFixed(1)}%</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </section>
+  );
+}
+
+/* =========================================================
+   ZONE 6 — Compare tenants / Service usage breakdown
 ========================================================= */
 export function CompareTenants() {
-  const { windowHours } = useScope();
+  const { windowHours, tenantId } = useScope();
+  const { effectiveTenant, tick } = useUsage();
+  const isTenantScoped = !!effectiveTenant;
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
 
   const data = useMemo(() => getCompareData(windowHours, selected), [windowHours, selected]);
 
+  const scopedRows = useMemo(
+    () => (isTenantScoped ? getFilteredData({ windowHours, tenantId }) : []),
+    [isTenantScoped, windowHours, tenantId, tick]
+  );
+  const scopedData = useMemo(() => {
+    if (!isTenantScoped) return [];
+    return SERVICES.map((s) => ({
+      key: s.key,
+      name: s.name,
+      color: s.color,
+      requests: scopedRows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0),
+    })).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+  }, [isTenantScoped, scopedRows]);
+
   function toggle(k: string) {
     setSelected((s) => s.includes(k) ? (s.length > 1 ? s.filter((x) => x !== k) : s) : [...s, k]);
   }
+
+  const triggerLabel = isTenantScoped ? "Service usage breakdown" : "Usage by tenant & service";
 
   return (
     <section>
@@ -518,68 +585,89 @@ export function CompareTenants() {
       >
         <span className="inline-flex items-center gap-2">
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          {open ? "Collapse comparison" : "Expand comparison"}
+          {open ? "Collapse" : "Expand"} {triggerLabel.toLowerCase()}
         </span>
-        <span className="text-[11px] text-slate-500 uppercase tracking-wider">Usage by tenant &amp; service</span>
+        <span className="text-[11px] text-slate-500 uppercase tracking-wider">{triggerLabel}</span>
       </button>
       {open && (
         <div className="mt-3">
-          <Eyebrow
-            subtitle="Compare consumption across tenants and services"
-            right={
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
-                    Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-60 p-2" align="end">
-                  <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
-                    <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
-                    <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
-                  </div>
-                  <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
-                    {SERVICES.map((s) => (
-                      <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
-                        <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
+          {isTenantScoped ? (
+            <>
+              <Eyebrow subtitle={`Request volume by service for ${effectiveTenant!.name}`}>Service usage breakdown</Eyebrow>
+              <Card className="p-5">
+                <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
+                  <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => [formatIndian(v), "Requests"]} separator="  " />
+                    <Bar dataKey="requests" radius={[0, 3, 3, 0]}>
+                      {scopedData.map((s) => <Cell key={s.key} fill={s.color} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            </>
+          ) : (
+            <>
+              <Eyebrow
+                subtitle="Compare consumption across tenants and services"
+                right={
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
+                        Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-60 p-2" align="end">
+                      <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
+                        <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
+                        <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
+                      </div>
+                      <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
+                        {SERVICES.map((s) => (
+                          <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
+                            <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
+                            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
+                            <span className="text-sm">{s.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                }
+              >Usage by tenant &amp; service</Eyebrow>
+              <Card className="p-5">
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 text-xs">
+                  {selected.map((k) => {
+                    const s = SERVICES.find((x) => x.key === k)!;
+                    return (
+                      <span key={k} className="inline-flex items-center gap-1.5">
                         <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-                        <span className="text-sm">{s.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            }
-          >Usage by tenant &amp; service</Eyebrow>
-          <Card className="p-5">
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 text-xs">
-              {selected.map((k) => {
-                const s = SERVICES.find((x) => x.key === k)!;
-                return (
-                  <span key={k} className="inline-flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-                    {s.name}
-                  </span>
-                );
-              })}
-            </div>
-            <ResponsiveContainer width="100%" height={44 * 10 + 60}>
-              <BarChart data={data} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => formatIndian(v)} separator="  " />
-                {selected.map((k, i) => {
-                  const s = SERVICES.find((x) => x.key === k)!;
-                  const isLast = i === selected.length - 1;
-                  return <Bar key={k} dataKey={k} stackId="svc" fill={s.color} radius={isLast ? [0, 3, 3, 0] : 0} />;
-                })}
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="mt-2 text-[11px] text-slate-500 italic">
-              Showing request count. Native units vary by service.
-            </div>
-          </Card>
+                        {s.name}
+                      </span>
+                    );
+                  })}
+                </div>
+                <ResponsiveContainer width="100%" height={44 * 10 + 60}>
+                  <BarChart data={data} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => formatIndian(v)} separator="  " />
+                    {selected.map((k, i) => {
+                      const s = SERVICES.find((x) => x.key === k)!;
+                      const isLast = i === selected.length - 1;
+                      return <Bar key={k} dataKey={k} stackId="svc" fill={s.color} radius={isLast ? [0, 3, 3, 0] : 0} />;
+                    })}
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-2 text-[11px] text-slate-500 italic">
+                  Showing request count. Native units vary by service.
+                </div>
+              </Card>
+            </>
+          )}
         </div>
       )}
     </section>
