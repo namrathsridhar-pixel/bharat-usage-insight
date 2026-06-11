@@ -330,7 +330,7 @@ export function ServiceBreakdown() {
                 <Th k="nativeUnits">Native units</Th>
                 <Th k="successRate">Success %</Th>
                 <Th k="failed">Failed</Th>
-                <th className="py-3 px-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">vs prev period</th>
+                <th className="py-3 px-3 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">Trend (5 periods)</th>
               </tr>
             </thead>
             <tbody>
@@ -348,8 +348,6 @@ export function ServiceBreakdown() {
                 }
                 const sr = r.successRate * 100;
                 const srClr = sr >= 95 ? "text-emerald-700" : sr >= 90 ? "text-amber-600" : "text-rose-600";
-                const trendUp = r.trendPct >= 0;
-                const trendZero = r.trendPct === 0;
                 return (
                   <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
                     <td className="py-3 pl-4 pr-3 relative">
@@ -363,14 +361,10 @@ export function ServiceBreakdown() {
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
                     <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatIndian(r.failed)}</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-xs">
-                      {trendZero ? (
-                        <span className="text-slate-400">— 0%</span>
-                      ) : (
-                        <span className={trendUp ? "text-emerald-600" : "text-rose-600"}>
-                          {trendUp ? "↑" : "↓"} {Math.abs(r.trendPct).toFixed(1)}%
-                        </span>
-                      )}
+                    <td className="py-3 px-3 text-right">
+                      <div className="inline-block">
+                        <Sparkline serviceKey={r.service.key} color={r.service.color} windowHours={windowHours} />
+                      </div>
                     </td>
                   </tr>
                 );
