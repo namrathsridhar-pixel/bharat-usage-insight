@@ -109,7 +109,14 @@ export function PlatformPulse() {
    ZONE 2 — Platform Adoption
 ========================================================= */
 export function PlatformAdoption() {
-  const concentration = useMemo(() => getUsageConcentration(), []);
+  const { window } = useUsage();
+  const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
+  const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
+  const windowLabel =
+    window === "1h"  ? "last 1 hour"   :
+    window === "24h" ? "last 24 hours" :
+    window === "7d"  ? "last 7 days"   : "last 30 days";
+
   const items = [
     { label: "Active tenants", value: getActiveTenants24h(), sub: "last 24 hours" },
     { label: "Active tenants", value: getActiveTenants7d(),  sub: "last 7 days" },
@@ -117,16 +124,17 @@ export function PlatformAdoption() {
     { label: "New this week",  value: getNewTenants7d(),     sub: "onboarded" },
   ];
 
-  // donut: top 5 tenants + Others
-  const top5 = concentration.slice(0, 5);
-  const rest = concentration.slice(5);
+  // donut: top 5 tenants + Others (exclude tenants with 0 requests in this window)
+  const active = concentration.filter((c) => c.requests > 0);
+  const top5 = active.slice(0, 5);
+  const rest = active.slice(5);
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
     ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
     ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
-  const top3Pct = concentration.slice(0, 3).reduce((a, r) => a + r.pct, 0);
+  const top3Pct = active.slice(0, 3).reduce((a, r) => a + r.pct, 0);
 
   return (
     <section>
@@ -144,7 +152,7 @@ export function PlatformAdoption() {
           </div>
           <div className="md:border-l md:border-slate-100 md:pl-6">
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
-              Usage concentration <span className="text-slate-400 normal-case font-normal">· last 30 days</span>
+              Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
             </div>
             <div className="flex items-center gap-5">
               <div className="relative shrink-0" style={{ width: 180, height: 180 }}>
@@ -287,7 +295,7 @@ export function ServiceBreakdown() {
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
-  const services = useMemo(() => getServiceBreakdown(rows, windowHours), [rows, windowHours]);
+  const services = useMemo(() => getServiceBreakdown(rows, windowHours, tenantId), [rows, windowHours, tenantId]);
   const [sortKey, setSortKey] = useState<SortKey>("requests");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -370,6 +378,9 @@ export function ServiceBreakdown() {
                       ) : (
                         <span className="text-rose-600">↓ {Math.abs(r.trendPct).toFixed(0)}%</span>
                       )}
+                      <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                        {formatLakhCr(r.prevRequests)} → {formatLakhCr(r.requests)}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -394,51 +405,62 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
-  const [expanded, setExpanded] = useState(false);
-  const [search, setSearch] = useState("");
+  const TOP_OPTIONS = [5, 10, 25, 50] as const;
+  type TopN = typeof TOP_OPTIONS[number] | "all";
+  const [topN, setTopN] = useState<TopN>(10);
 
   function handleClick(id: string) {
     setSelectedTenantId(id);
     setTimeout(() => globalThis.scrollTo({ top: 0, behavior: "smooth" }), 60);
   }
 
-  // search applies in both modes; expanded shows all matches, collapsed shows top 10 of active matches (then inactive at bottom)
-  const q = search.trim().toLowerCase();
-  const matches = q ? ranked.filter((r) => r.tenant.name.toLowerCase().includes(q)) : ranked;
+  const activeRanked = ranked.filter((r) => !r.inactive);
+  const inactiveRanked = ranked.filter((r) => r.inactive);
+  const limit = topN === "all" ? activeRanked.length : Math.min(topN, activeRanked.length);
+  const visibleActive = activeRanked.slice(0, limit);
+  const isExpanded = topN === "all" || topN > 10;
+  const visible = [...visibleActive, ...(isExpanded ? inactiveRanked : [])];
 
-  const activeMatches = matches.filter((r) => !r.inactive);
-  const inactiveMatches = matches.filter((r) => r.inactive);
-  const visibleActive = expanded ? activeMatches : activeMatches.slice(0, 10);
-  const visible = [...visibleActive, ...(expanded ? inactiveMatches : [])];
-  const hiddenActiveCount = activeMatches.length - visibleActive.length;
+  // K/M/B for compact (≤10), Indian K/L/Cr for detail
+  const fmt = isExpanded ? formatLakhCr : formatKMB;
 
-  // For numeric formatting: collapsed top-10 uses K/M/B; expanded list uses Indian K/L/Cr (detail table).
-  const fmt = expanded ? formatLakhCr : formatKMB;
-
-  // index map for stable rank labels (#1 .. #N within the full ranked active list)
   const rankIndex = new Map<string, number>();
-  ranked.filter((r) => !r.inactive).forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
+  activeRanked.forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
+
+  const subtitle = topN === "all"
+    ? `All ${ranked.length} tenants`
+    : `Top ${limit} by request volume`;
 
   return (
     <section>
-      <Eyebrow subtitle={expanded ? `All ${ranked.length} tenants` : "Top 10 by request volume"}>Tenant ranking</Eyebrow>
-      <Card className="p-3">
-        <div className="px-1 pb-2">
-          <div className="relative">
-            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
-            </svg>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search tenants..."
-              className="w-full pl-8 pr-2 py-1.5 text-sm rounded border border-slate-200 focus:outline-none focus:border-orange-400 bg-white"
-            />
+      <Eyebrow
+        subtitle={subtitle}
+        right={
+          <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+            {[...TOP_OPTIONS, "all" as const].map((n) => {
+              const active = topN === n;
+              const label = n === "all" ? "All" : `Top ${n}`;
+              return (
+                <button
+                  key={String(n)}
+                  onClick={() => setTopN(n)}
+                  className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                    active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
-        </div>
+        }
+      >
+        Tenant ranking
+      </Eyebrow>
+      <Card className="p-3">
         <div className="space-y-0.5">
           {visible.length === 0 && (
-            <div className="px-3 py-6 text-center text-xs text-slate-400">No tenants match "{search}"</div>
+            <div className="px-3 py-6 text-center text-xs text-slate-400">No tenants in this period</div>
           )}
           {visible.map((r) => {
             const idx = rankIndex.get(r.tenant.id) ?? 0;
@@ -459,6 +481,13 @@ export function TenantRanking() {
                       {r.inactive ? "—" : `#${idx}`}
                     </span>
                   </div>
+                  <span
+                    className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
+                    style={{ background: r.inactive ? "#CBD5E1" : r.tenant.avatarColor }}
+                    aria-hidden
+                  >
+                    {r.tenant.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                  </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3">
                       <div className="flex items-baseline gap-2 min-w-0">
@@ -475,7 +504,12 @@ export function TenantRanking() {
                     </div>
                     <div className="mt-1.5 flex items-center gap-2">
                       <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
-                        {!r.inactive && <div className="h-full rounded-full bg-orange-500" style={{ width: `${(r.requests / max) * 100}%` }} />}
+                        {!r.inactive && (
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${(r.requests / max) * 100}%`, background: r.tenant.avatarColor }}
+                          />
+                        )}
                       </div>
                       <span className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}>
                         {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
@@ -490,22 +524,6 @@ export function TenantRanking() {
             );
           })}
         </div>
-        {!expanded && hiddenActiveCount > 0 && (
-          <button
-            onClick={() => setExpanded(true)}
-            className="mt-2 w-full text-center py-2 text-xs font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50/60 rounded-lg transition"
-          >
-            Show all {ranked.length} tenants ({hiddenActiveCount} more active{inactiveMatches.length ? ` · ${inactiveMatches.length} inactive` : ""})
-          </button>
-        )}
-        {expanded && (
-          <button
-            onClick={() => { setExpanded(false); setSearch(""); }}
-            className="mt-2 w-full text-center py-2 text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition"
-          >
-            Show top 10 only
-          </button>
-        )}
       </Card>
     </section>
   );
@@ -589,8 +607,15 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
               </div>
               {topTenants.map((t) => (
                 <div key={t.tenant.id} className="flex items-center py-2 text-sm">
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.tenant.avatarColor }} />
+                  <div className="flex-1 flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
+                      style={{ background: t.tenant.avatarColor }}
+                      aria-hidden
+                    >
+                      {t.tenant.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="h-4 w-1 rounded-sm shrink-0" style={{ background: t.tenant.avatarColor }} />
                     <span className="text-slate-800 truncate">{t.tenant.name}</span>
                   </div>
                   <div className="w-24 text-right tabular-nums text-slate-900 font-medium">{t.avgRps}</div>
