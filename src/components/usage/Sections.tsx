@@ -491,7 +491,7 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
               <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
               <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
               <Line type="monotone" dataKey="platformRps" stroke="#1F2937" strokeWidth={2} dot={false} isAnimationActive={false} name="Platform total" />
-              {!singleLineOnly && breakdown && tenantSwatches.map((t) => (
+              {showBreakdownBtn && breakdown && tenantSwatches.map((t) => (
                 <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color} strokeWidth={1.6} dot={false} isAnimationActive={false} name={t.name} />
               ))}
             </LineChart>
