@@ -595,27 +595,22 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
       </div>
       <Card className="p-5">
         <ResponsiveContainer width="100%" height={220}>
-          {isDaily ? (
-            <BarChart data={points} margin={{ top: 10, right: 40, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => [`${v} req/s`, "Peak RPS"]} separator="  " />
-              <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
-              <Bar dataKey="peakRps" radius={[3, 3, 0, 0]}>
-                {points.map((_, i) => <Cell key={i} fill={i === peakIdx ? "#F97316" : "#CBD5E1"} />)}
-              </Bar>
-            </BarChart>
-          ) : (
-            <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
-              <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
-              <Line type="monotone" dataKey="platformRps" stroke="#1F2937" strokeWidth={2} dot={false} isAnimationActive={false} name="Platform total" />
-            </LineChart>
-          )}
+          <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
+            <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
+            <Line
+              type="monotone"
+              dataKey={isDaily ? "peakRps" : "platformRps"}
+              stroke="#1F2937"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+              name={isDaily ? "Peak RPS" : "Platform total"}
+            />
+          </LineChart>
         </ResponsiveContainer>
 
         {!isTenantScoped && topTenants.length > 0 && (
