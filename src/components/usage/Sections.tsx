@@ -135,17 +135,22 @@ export function PlatformAdoption() {
     { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
-  // donut: top 5 tenants + Others (exclude tenants with 0 requests in this window)
+  // Top N selector for donut
+  const CONC_TOP_OPTIONS = [5, 10, 25] as const;
+  type ConcTopN = typeof CONC_TOP_OPTIONS[number];
+  const [concTopN, setConcTopN] = useState<ConcTopN>(10);
+
   const active = concentration.filter((c) => c.requests > 0);
-  const top5 = active.slice(0, 5);
-  const rest = active.slice(5);
+  const donutTopCount = Math.min(concTopN, active.length);
+  const topSlice = active.slice(0, donutTopCount);
+  const rest = active.slice(donutTopCount);
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
-    ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
+    ...topSlice.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
     ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
-  const top3Pct = active.slice(0, 3).reduce((a, r) => a + r.pct, 0);
+  const donutTopPct = topSlice.reduce((a, r) => a + r.pct, 0);
 
   return (
     <section>
