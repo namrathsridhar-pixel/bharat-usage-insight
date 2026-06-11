@@ -135,8 +135,8 @@ export function PlatformAdoption() {
     { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
-  // Fixed Top 10 for usage concentration donut
-  const concTopN = 10;
+  // Fixed Top 5 for usage concentration donut
+  const concTopN = 5;
 
   const active = concentration.filter((c) => c.requests > 0);
   const donutTopCount = Math.min(concTopN, active.length);
