@@ -33,9 +33,6 @@ export function PortalShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <div className="px-3 pt-3 pb-2 border-b border-slate-200">
-          <SidebarTenantSwitcher />
-        </div>
 
         <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
           {NAV_TOP.map((item) => {
