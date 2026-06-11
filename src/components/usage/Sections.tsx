@@ -585,28 +585,50 @@ export function ServiceMix() {
     }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
   }, [rows]);
 
+  const shortName = (effectiveTenant?.name ?? "")
+    .split(/\s+/).map((w) => w[0]).join("").slice(0, 4).toUpperCase();
+
   return (
     <section>
       <Eyebrow subtitle={`Service mix · ${effectiveTenant?.name ?? ""}`}>Service share</Eyebrow>
       <Card className="p-5">
-        <div className="flex h-7 rounded-md overflow-hidden bg-slate-100 border border-slate-200">
-          {segments.map((s) => (
-            <div
-              key={s.key}
-              style={{ width: `${s.pct}%`, background: s.color }}
-              title={`${s.name} · ${formatIndian(s.requests)} req · ${s.pct.toFixed(1)}%`}
-            />
-          ))}
-        </div>
-        <div className="mt-4 space-y-2">
-          {segments.map((s) => (
-            <div key={s.key} className="flex items-center gap-2 text-xs">
-              <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-              <span className="flex-1 text-slate-700 truncate">{s.name}</span>
-              <span className="tabular-nums text-slate-900 font-medium">{formatIndian(s.requests)}</span>
-              <span className="tabular-nums text-slate-500 w-12 text-right">{s.pct.toFixed(1)}%</span>
+        <div className="flex items-center gap-5">
+          <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
+            <ResponsiveContainer width={200} height={200}>
+              <PieChart>
+                <Pie
+                  data={segments}
+                  dataKey="requests"
+                  innerRadius={62}
+                  outerRadius={96}
+                  paddingAngle={1}
+                  stroke="#fff"
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                >
+                  {segments.map((s) => <Cell key={s.key} fill={s.color} />)}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                  formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                  separator="  "
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <div className="text-[16px] font-bold text-slate-900 leading-tight">{shortName}</div>
+              <div className="text-[10px] text-slate-500 mt-1">services</div>
             </div>
-          ))}
+          </div>
+          <div className="flex-1 min-w-0 space-y-1.5">
+            {segments.map((s) => (
+              <div key={s.key} className="flex items-center gap-2 text-[11px]">
+                <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                <span className="flex-1 text-slate-700 truncate">{s.name}</span>
+                <span className="tabular-nums text-slate-500">{s.pct.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </Card>
     </section>
@@ -614,8 +636,16 @@ export function ServiceMix() {
 }
 
 /* =========================================================
-   ZONE 6 — Compare tenants / Service usage breakdown
+   ZONE 6 — Heatmap (all tenants) / Service breakdown (scoped)
 ========================================================= */
+const HEAT_RAMP = ["#FFFFFF", "#FFEDD5", "#FED7AA", "#FDBA74", "#FB923C", "#F97316", "#EA580C"];
+function heatColor(v: number, max: number) {
+  if (max <= 0 || v <= 0) return HEAT_RAMP[0];
+  const r = v / max;
+  const idx = Math.min(HEAT_RAMP.length - 1, Math.max(1, Math.ceil(r * (HEAT_RAMP.length - 1))));
+  return HEAT_RAMP[idx];
+}
+
 export function CompareTenants() {
   const { windowHours, tenantId } = useScope();
   const { effectiveTenant, tick } = useUsage();
@@ -623,7 +653,10 @@ export function CompareTenants() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
 
-  const data = useMemo(() => getCompareData(windowHours, selected), [windowHours, selected]);
+  const heat = useMemo(
+    () => (!isTenantScoped ? getHeatmap(windowHours, selected) : null),
+    [isTenantScoped, windowHours, selected]
+  );
 
   const scopedRows = useMemo(
     () => (isTenantScoped ? getFilteredData({ windowHours, tenantId }) : []),
@@ -631,12 +664,15 @@ export function CompareTenants() {
   );
   const scopedData = useMemo(() => {
     if (!isTenantScoped) return [];
-    return SERVICES.map((s) => ({
-      key: s.key,
-      name: s.name,
-      color: s.color,
-      requests: scopedRows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0),
-    })).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+    return SERVICES.map((s) => {
+      const r = scopedRows.filter((x) => x.service === s.key);
+      return {
+        key: s.key, name: s.name, color: s.color,
+        requests: r.reduce((a, x) => a + x.requests, 0),
+        nativeUnits: r.reduce((a, x) => a + x.nativeUnits, 0),
+        unitShort: s.unitShort,
+      };
+    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
   }, [isTenantScoped, scopedRows]);
 
   function toggle(k: string) {
@@ -644,6 +680,7 @@ export function CompareTenants() {
   }
 
   const triggerLabel = isTenantScoped ? "Service usage breakdown" : "Usage by tenant & service";
+  const maxTenantTotal = heat ? Math.max(1, ...Object.values(heat.tenantTotals)) : 1;
 
   return (
     <section>
@@ -664,12 +701,28 @@ export function CompareTenants() {
               <Eyebrow subtitle={`Request volume by service for ${effectiveTenant!.name}`}>Service usage breakdown</Eyebrow>
               <Card className="p-5">
                 <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
-                  <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
+                  <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 110, left: 30, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => [formatIndian(v), "Requests"]} separator="  " />
-                    <Bar dataKey="requests" radius={[0, 3, 3, 0]}>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [
+                        `${formatIndian(v)} req · ${formatCompact(p.payload.nativeUnits)} ${p.payload.unitShort}`,
+                        "Usage",
+                      ]}
+                      separator="  "
+                    />
+                    <Bar dataKey="requests" radius={[0, 3, 3, 0]}
+                      label={{
+                        position: "right", fontSize: 11, fill: "#475569",
+                        formatter: (_v: any, _n: any, p: any) => {
+                          const d = p?.payload;
+                          if (!d) return "";
+                          return `${formatIndian(d.requests)} req · ${formatCompact(d.nativeUnits)} ${d.unitShort}`;
+                        },
+                      }}
+                    >
                       {scopedData.map((s) => <Cell key={s.key} fill={s.color} />)}
                     </Bar>
                   </BarChart>
@@ -679,7 +732,7 @@ export function CompareTenants() {
           ) : (
             <>
               <Eyebrow
-                subtitle="Compare consumption across tenants and services"
+                subtitle="Heatmap of request volume per tenant per service"
                 right={
                   <Popover>
                     <PopoverTrigger asChild>
@@ -705,33 +758,76 @@ export function CompareTenants() {
                   </Popover>
                 }
               >Usage by tenant &amp; service</Eyebrow>
-              <Card className="p-5">
-                <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 text-xs">
-                  {selected.map((k) => {
-                    const s = SERVICES.find((x) => x.key === k)!;
-                    return (
-                      <span key={k} className="inline-flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-                        {s.name}
-                      </span>
-                    );
-                  })}
-                </div>
-                <ResponsiveContainer width="100%" height={44 * 10 + 60}>
-                  <BarChart data={data} layout="vertical" margin={{ top: 5, right: 24, left: 30, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number) => formatIndian(v)} separator="  " />
-                    {selected.map((k, i) => {
-                      const s = SERVICES.find((x) => x.key === k)!;
-                      const isLast = i === selected.length - 1;
-                      return <Bar key={k} dataKey={k} stackId="svc" fill={s.color} radius={isLast ? [0, 3, 3, 0] : 0} />;
+              <Card className="p-5 overflow-x-auto">
+                <table className="w-full border-collapse text-[11px]">
+                  <thead>
+                    <tr>
+                      <th className="text-left font-semibold text-slate-500 uppercase tracking-wider pb-2 pr-3 align-bottom" style={{ minWidth: 160 }}>Tenant</th>
+                      {selected.map((k) => {
+                        const s = SERVICES.find((x) => x.key === k)!;
+                        return (
+                          <th key={k} className="px-1 pb-2 align-bottom" style={{ minWidth: 64 }}>
+                            <div className="inline-flex flex-col items-center gap-1">
+                              <span className="h-1.5 w-6 rounded-sm" style={{ background: s.color }} />
+                              <span className="text-slate-600 font-medium whitespace-nowrap" style={{ writingMode: "horizontal-tb" }}>{s.name}</span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th className="text-right font-semibold text-slate-500 uppercase tracking-wider pb-2 pl-3 align-bottom" style={{ minWidth: 140 }}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TENANTS.map((t) => {
+                      const total = heat!.tenantTotals[t.id] || 0;
+                      return (
+                        <tr key={t.id} className="border-t border-slate-100">
+                          <td className="py-1 pr-3">
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.avatarColor }} />
+                              <span className="text-slate-800 text-xs truncate">{t.name}</span>
+                            </div>
+                          </td>
+                          {selected.map((k) => {
+                            const v = heat!.matrix[t.id][k];
+                            const bg = heatColor(v, heat!.max);
+                            const dark = v / heat!.max > 0.55;
+                            const pct = total ? (v / total) * 100 : 0;
+                            const svc = SERVICES.find((x) => x.key === k)!;
+                            return (
+                              <td key={k} className="p-0.5">
+                                <div
+                                  className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
+                                  style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
+                                  title={`${t.name} · ${svc.name} · ${formatIndian(v)} req · ${pct.toFixed(1)}% of tenant`}
+                                >
+                                  {v > 0 ? formatCompact(v) : ""}
+                                </div>
+                              </td>
+                            );
+                          })}
+                          <td className="pl-3 py-1">
+                            <div className="flex items-center gap-2 justify-end">
+                              <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
+                              </div>
+                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatIndian(total)}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
                     })}
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-2 text-[11px] text-slate-500 italic">
-                  Showing request count. Native units vary by service.
+                  </tbody>
+                </table>
+                <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
+                  <span className="italic">Colour intensity = request volume. Hover any cell for details.</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span>Low</span>
+                    {HEAT_RAMP.map((c, i) => (
+                      <span key={i} className="inline-block h-2.5 w-4 border border-slate-200" style={{ background: c }} />
+                    ))}
+                    <span>High</span>
+                  </span>
                 </div>
               </Card>
             </>
