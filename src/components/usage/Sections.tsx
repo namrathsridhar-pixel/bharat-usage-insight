@@ -168,8 +168,26 @@ export function PlatformAdoption() {
             ))}
           </div>
           <div className="border-t border-slate-100 pt-5">
-            <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
-              Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
+            <div className="flex items-center justify-between mb-2 gap-3">
+              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+                Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
+              </div>
+              <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+                {CONC_TOP_OPTIONS.map((n) => {
+                  const active = concTopN === n;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setConcTopN(n)}
+                      className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                        active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {`Top ${n}`}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex items-center gap-6">
               <div className="relative shrink-0 basis-1/3 max-w-[200px] flex justify-center" style={{ height: 180 }}>
