@@ -17,7 +17,7 @@ import {
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
   getUsageConcentration, getPrevTotals,
   getServiceSparkline, getTopTenantsByRps, getHeatmap,
-  windowToHours, formatIndian, formatCompact,
+  windowToHours, formatIndian, formatKMB, formatLakhCr,
   type WindowHours,
 } from "@/data/aggregations";
 
@@ -59,7 +59,7 @@ function Sparkline({ serviceKey, color, windowHours }: { serviceKey: string; col
           <Tooltip
             cursor={{ fill: "rgba(0,0,0,0.04)" }}
             contentStyle={{ fontSize: 11, borderRadius: 6, border: "1px solid #E2E8F0", background: "#fff", padding: "4px 8px" }}
-            formatter={(v: number) => [formatIndian(v), "Requests"]}
+            formatter={(v: number) => [formatKMB(v), "Requests"]}
             labelFormatter={(_l, p: any) => p?.[0]?.payload?.label ?? ""}
             separator="  "
           />
@@ -100,7 +100,7 @@ export function PlatformPulse() {
   const prevActive = isTenantView ? getActiveServices(prevRows) : getActiveTenants(prevRows);
 
   const items = [
-    { label: "Total requests", value: formatIndian(totals.totalRequests), delta: reqDelta },
+    { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
     { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
     { label: "Avg RPS", value: `${avgRps}`, suffix: "req/s", delta: rpsDelta },
     isTenantView
@@ -143,7 +143,7 @@ export function PlatformAdoption() {
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
     ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
-    ...(rest.length ? [{ name: "Others", value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+    ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
   const top3Pct = concentration.slice(0, 3).reduce((a, r) => a + r.pct, 0);
 
@@ -183,7 +183,7 @@ export function PlatformAdoption() {
                     </Pie>
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
                       separator="  "
                     />
                   </PieChart>
@@ -198,7 +198,7 @@ export function PlatformAdoption() {
                   <div key={d.name} className="flex items-center gap-2 text-[11px]">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: d.color }} />
                     <span className="flex-1 text-slate-700 truncate">{d.name}</span>
-                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(1)}%</span>
+                    <span className="tabular-nums text-slate-500">{d.pct.toFixed(2)}%</span>
                   </div>
                 ))}
               </div>
@@ -236,17 +236,17 @@ export function VolumeHealth() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <Card className="p-4">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Total requests</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatIndian(totals.totalRequests)}</div>
+          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalRequests)}</div>
           <div className="mt-2"><Delta pct={reqDelta} /></div>
         </Card>
         <Card className="p-4 bg-emerald-50/40 border-emerald-100">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-emerald-700">Successful</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatIndian(totals.totalSuccessful)}</div>
+          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalSuccessful)}</div>
           <div className="mt-1.5 text-[11px] text-emerald-700 tabular-nums">{successRate.toFixed(2)}% success rate</div>
         </Card>
         <Card className="p-4 bg-rose-50/40 border-rose-100">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-rose-700">Failed</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatIndian(totals.totalFailed)}</div>
+          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalFailed)}</div>
           <div className="mt-1.5 text-[11px] text-rose-700 tabular-nums">{failureRate.toFixed(2)}% failure rate</div>
         </Card>
       </div>
@@ -257,10 +257,10 @@ export function VolumeHealth() {
             <AreaChart data={chartWithFailRate} margin={{ top: 22, right: 12, left: -5, bottom: 0 }} syncId="vh">
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
-              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+              <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
               <Tooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                formatter={(v: number) => [formatIndian(v), "Requests"]}
+                formatter={(v: number) => [formatKMB(v), "Requests"]}
                 labelFormatter={(l) => `Time  ${l}`}
                 separator="  "
               />
@@ -375,12 +375,12 @@ export function ServiceBreakdown() {
                       <span className="font-medium text-slate-900">{r.service.name}</span>
                     </td>
                     <td className="py-3 px-3 text-slate-600">{r.service.unit}</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatIndian(r.requests)}</td>
+                    <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatLakhCr(r.requests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
-                      {formatCompact(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
+                      {formatLakhCr(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatIndian(r.failed)}</td>
+                    <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatLakhCr(r.failed)}</td>
                     <td className="py-3 px-3 text-right">
                       <div className="inline-block">
                         <Sparkline serviceKey={r.service.key} color={r.service.color} windowHours={windowHours} />
@@ -409,21 +409,55 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
+  const [expanded, setExpanded] = useState(false);
+  const [search, setSearch] = useState("");
+
   function handleClick(id: string) {
     setSelectedTenantId(id);
     setTimeout(() => globalThis.scrollTo({ top: 0, behavior: "smooth" }), 60);
   }
 
-  let visibleRank = 0;
+  // search applies in both modes; expanded shows all matches, collapsed shows top 10 of active matches (then inactive at bottom)
+  const q = search.trim().toLowerCase();
+  const matches = q ? ranked.filter((r) => r.tenant.name.toLowerCase().includes(q)) : ranked;
+
+  const activeMatches = matches.filter((r) => !r.inactive);
+  const inactiveMatches = matches.filter((r) => r.inactive);
+  const visibleActive = expanded ? activeMatches : activeMatches.slice(0, 10);
+  const visible = [...visibleActive, ...(expanded ? inactiveMatches : [])];
+  const hiddenActiveCount = activeMatches.length - visibleActive.length;
+
+  // For numeric formatting: collapsed top-10 uses K/M/B; expanded list uses Indian K/L/Cr (detail table).
+  const fmt = expanded ? formatLakhCr : formatKMB;
+
+  // index map for stable rank labels (#1 .. #N within the full ranked active list)
+  const rankIndex = new Map<string, number>();
+  ranked.filter((r) => !r.inactive).forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
+
   return (
     <section>
-      <Eyebrow subtitle="Ranked by request volume">Tenant ranking</Eyebrow>
-      <Card className="p-2">
+      <Eyebrow subtitle={expanded ? `All ${ranked.length} tenants` : "Top 10 by request volume"}>Tenant ranking</Eyebrow>
+      <Card className="p-3">
+        <div className="px-1 pb-2">
+          <div className="relative">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search tenants..."
+              className="w-full pl-8 pr-2 py-1.5 text-sm rounded border border-slate-200 focus:outline-none focus:border-orange-400 bg-white"
+            />
+          </div>
+        </div>
         <div className="space-y-0.5">
-          {ranked.map((r) => {
-            if (!r.inactive) visibleRank++;
-            const idx = visibleRank - 1;
-            const rankColor = !r.inactive && idx < 3 ? RANK_COLOR[idx] : undefined;
+          {visible.length === 0 && (
+            <div className="px-3 py-6 text-center text-xs text-slate-400">No tenants match "{search}"</div>
+          )}
+          {visible.map((r) => {
+            const idx = rankIndex.get(r.tenant.id) ?? 0;
+            const rankColor = !r.inactive && idx <= 3 ? RANK_COLOR[idx - 1] : undefined;
             return (
               <button
                 key={r.tenant.id}
@@ -436,8 +470,8 @@ export function TenantRanking() {
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 w-10 shrink-0">
                     {rankColor && <span className="h-1.5 w-1.5 rounded-full" style={{ background: rankColor }} />}
-                    <span className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx < 3 ? "text-slate-900" : "text-slate-400"}`}>
-                      {r.inactive ? "—" : `#${idx + 1}`}
+                    <span className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx <= 3 ? "text-slate-900" : "text-slate-400"}`}>
+                      {r.inactive ? "—" : `#${idx}`}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -451,15 +485,15 @@ export function TenantRanking() {
                         }`}>{r.tenant.plan}</span>
                       </div>
                       <span className={`text-xs tabular-nums shrink-0 ${r.inactive ? "text-slate-300" : "text-slate-600"}`}>
-                        {r.inactive ? "—" : formatIndian(r.requests)}
+                        {r.inactive ? "—" : fmt(r.requests)}
                       </span>
                     </div>
                     <div className="mt-1.5 flex items-center gap-2">
                       <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
                         {!r.inactive && <div className="h-full rounded-full bg-orange-500" style={{ width: `${(r.requests / max) * 100}%` }} />}
                       </div>
-                      <span className={`text-[10px] tabular-nums w-10 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}>
-                        {r.inactive ? "—" : `${r.pct.toFixed(1)}%`}
+                      <span className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}>
+                        {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
                     {r.inactive && (
@@ -471,6 +505,22 @@ export function TenantRanking() {
             );
           })}
         </div>
+        {!expanded && hiddenActiveCount > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="mt-2 w-full text-center py-2 text-xs font-medium text-orange-600 hover:text-orange-700 hover:bg-orange-50/60 rounded-lg transition"
+          >
+            Show all {ranked.length} tenants ({hiddenActiveCount} more active{inactiveMatches.length ? ` · ${inactiveMatches.length} inactive` : ""})
+          </button>
+        )}
+        {expanded && (
+          <button
+            onClick={() => { setExpanded(false); setSearch(""); }}
+            className="mt-2 w-full text-center py-2 text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition"
+          >
+            Show top 10 only
+          </button>
+        )}
       </Card>
     </section>
   );
@@ -610,7 +660,7 @@ export function ServiceMix() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                  formatter={(v: number, _n, p: any) => [`${formatIndian(v)} req · ${p.payload.pct.toFixed(1)}%`, p.payload.name]}
+                  formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
                   separator="  "
                 />
               </PieChart>
@@ -625,7 +675,7 @@ export function ServiceMix() {
               <div key={s.key} className="flex items-center gap-2 text-[11px]">
                 <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
                 <span className="flex-1 text-slate-700 truncate">{s.name}</span>
-                <span className="tabular-nums text-slate-500">{s.pct.toFixed(1)}%</span>
+                <span className="tabular-nums text-slate-500">{s.pct.toFixed(2)}%</span>
               </div>
             ))}
           </div>
@@ -703,12 +753,12 @@ export function CompareTenants() {
                 <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
                   <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 110, left: 30, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatCompact(v)} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatKMB(v)} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
                       formatter={(v: number, _n, p: any) => [
-                        `${formatIndian(v)} req · ${formatCompact(p.payload.nativeUnits)} ${p.payload.unitShort}`,
+                        `${formatKMB(v)} req · ${formatKMB(p.payload.nativeUnits)} ${p.payload.unitShort}`,
                         "Usage",
                       ]}
                       separator="  "
@@ -719,7 +769,7 @@ export function CompareTenants() {
                         formatter: (_v: any, _n: any, p: any) => {
                           const d = p?.payload;
                           if (!d) return "";
-                          return `${formatIndian(d.requests)} req · ${formatCompact(d.nativeUnits)} ${d.unitShort}`;
+                          return `${formatKMB(d.requests)} req · ${formatKMB(d.nativeUnits)} ${d.unitShort}`;
                         },
                       }}
                     >
@@ -799,9 +849,9 @@ export function CompareTenants() {
                                 <div
                                   className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
-                                  title={`${t.name} · ${svc.name} · ${formatIndian(v)} req · ${pct.toFixed(1)}% of tenant`}
+                                  title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(2)}% of tenant`}
                                 >
-                                  {v > 0 ? formatCompact(v) : ""}
+                                  {v > 0 ? formatKMB(v) : ""}
                                 </div>
                               </td>
                             );
@@ -811,7 +861,7 @@ export function CompareTenants() {
                               <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                                 <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
                               </div>
-                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatIndian(total)}</span>
+                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatKMB(total)}</span>
                             </div>
                           </td>
                         </tr>
