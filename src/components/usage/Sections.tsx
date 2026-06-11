@@ -151,8 +151,8 @@ export function PlatformAdoption() {
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-4">
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-5 gap-x-4">
             {items.map((it, i) => (
               <div key={i}>
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
@@ -162,7 +162,7 @@ export function PlatformAdoption() {
               </div>
             ))}
           </div>
-          <div className="md:border-l md:border-slate-100 md:pl-6">
+          <div className="border-t border-slate-100 pt-5">
             <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-500 mb-2">
               Usage concentration <span className="text-slate-400 normal-case font-normal">· {windowLabel}</span>
             </div>
@@ -721,6 +721,9 @@ export function CompareTenants() {
   const isTenantScoped = !!effectiveTenant;
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
+  const HEAT_TOP_OPTIONS = [5, 10, 25] as const;
+  type HeatTopN = typeof HEAT_TOP_OPTIONS[number];
+  const [heatTopN, setHeatTopN] = useState<HeatTopN>(10);
 
   const heat = useMemo(
     () => (!isTenantScoped ? getHeatmap(windowHours, selected) : null),
@@ -803,28 +806,46 @@ export function CompareTenants() {
               <Eyebrow
                 subtitle="Heatmap of request volume per tenant per service"
                 right={
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
-                        Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-60 p-2" align="end">
-                      <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
-                        <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
-                        <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
-                      </div>
-                      <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
-                        {SERVICES.map((s) => (
-                          <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
-                            <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
-                            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-                            <span className="text-sm">{s.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+                      {HEAT_TOP_OPTIONS.map((n) => {
+                        const active = heatTopN === n;
+                        return (
+                          <button
+                            key={n}
+                            onClick={() => setHeatTopN(n)}
+                            className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                              active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >
+                            {`Top ${n}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
+                          Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-60 p-2" align="end">
+                        <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
+                          <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
+                          <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
+                        </div>
+                        <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
+                          {SERVICES.map((s) => (
+                            <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
+                              <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
+                              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
+                              <span className="text-sm">{s.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 }
               >Usage by tenant &amp; service</Eyebrow>
               <Card className="p-5 overflow-x-auto">
@@ -847,7 +868,10 @@ export function CompareTenants() {
                     </tr>
                   </thead>
                   <tbody>
-                    {TENANTS.map((t) => {
+                    {[...TENANTS]
+                      .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
+                      .slice(0, heatTopN)
+                      .map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
                       return (
                         <tr key={t.id} className="border-t border-slate-100">
@@ -888,6 +912,9 @@ export function CompareTenants() {
                     })}
                   </tbody>
                 </table>
+                <div className="mt-3 text-[12px] text-slate-500">
+                  Showing Top {heatTopN} tenants by total request volume. Adjust using the selector above.
+                </div>
                 <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
                   <span className="italic">Colour intensity = request volume. Hover any cell for details.</span>
                   <span className="inline-flex items-center gap-1.5">
