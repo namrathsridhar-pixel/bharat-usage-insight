@@ -211,7 +211,7 @@ export function PlatformAdoption() {
                     <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
                     <span className="shrink-0 text-slate-700 truncate max-w-[60%]">{d.name}</span>
                     <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
-                    <span className="tabular-nums text-slate-600 shrink-0">{d.pct.toFixed(2)}%</span>
+                    <span className="tabular-nums text-slate-600 shrink-0 text-right w-12">{d.pct.toFixed(2)}%</span>
                   </div>
                 ))}
               </div>
