@@ -117,11 +117,22 @@ export function PlatformAdoption() {
     window === "24h" ? "last 24 hours" :
     window === "7d"  ? "last 7 days"   : "last 30 days";
 
-  const items = [
-    { label: "Active tenants", value: getActiveTenants24h(), sub: "last 24 hours" },
-    { label: "Active tenants", value: getActiveTenants7d(),  sub: "last 7 days" },
-    { label: "Active tenants", value: getActiveTenants30d(), sub: "last 30 days" },
-    { label: "New this week",  value: getNewTenants7d(),     sub: "onboarded" },
+  const curRows = useMemo(() => getFilteredData({ windowHours }), [windowHours]);
+  const curTotals = useMemo(() => getTotals(curRows), [curRows]);
+  const prevTotals = useMemo(() => getPrevTotals(windowHours), [windowHours]);
+  const activeCount = Math.max(1, getActiveTenants(curRows));
+  const avgPerTenant = Math.round(curTotals.totalRequests / activeCount);
+  const prevAvgPerTenant = Math.round(prevTotals.totalRequests / activeCount);
+  const avgDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
+
+  type Item = { label: string; value: React.ReactNode; sub: string; delta?: number };
+  const items: Item[] = [
+    { label: "Total tenants",         value: TENANTS.length,             sub: "registered on platform" },
+    { label: "Active tenants",        value: getActiveTenants24h(),      sub: "last 24 hours" },
+    { label: "Active tenants",        value: getActiveTenants7d(),       sub: "last 7 days" },
+    { label: "Active tenants",        value: getActiveTenants30d(),      sub: "last 30 days" },
+    { label: "New — Last 7 days",     value: getNewTenants7d(),          sub: "onboarded" },
+    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
   ];
 
   // donut: top 5 tenants + Others (exclude tenants with 0 requests in this window)
@@ -141,11 +152,12 @@ export function PlatformAdoption() {
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-4">
             {items.map((it, i) => (
               <div key={i}>
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
                 <div className="mt-1.5 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+                {it.delta !== undefined && <div className="mt-1.5"><Delta pct={it.delta} /></div>}
                 <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
               </div>
             ))}
@@ -405,8 +417,8 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
-  const TOP_OPTIONS = [5, 10, 25, 50] as const;
-  type TopN = typeof TOP_OPTIONS[number] | "all";
+  const TOP_OPTIONS = [5, 10, 25] as const;
+  type TopN = typeof TOP_OPTIONS[number];
   const [topN, setTopN] = useState<TopN>(10);
 
   function handleClick(id: string) {
@@ -416,9 +428,9 @@ export function TenantRanking() {
 
   const activeRanked = ranked.filter((r) => !r.inactive);
   const inactiveRanked = ranked.filter((r) => r.inactive);
-  const limit = topN === "all" ? activeRanked.length : Math.min(topN, activeRanked.length);
+  const limit = Math.min(topN, activeRanked.length);
   const visibleActive = activeRanked.slice(0, limit);
-  const isExpanded = topN === "all" || topN > 10;
+  const isExpanded = topN > 10;
   const visible = [...visibleActive, ...(isExpanded ? inactiveRanked : [])];
 
   // K/M/B for compact (≤10), Indian K/L/Cr for detail
@@ -427,9 +439,7 @@ export function TenantRanking() {
   const rankIndex = new Map<string, number>();
   activeRanked.forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
 
-  const subtitle = topN === "all"
-    ? `All ${ranked.length} tenants`
-    : `Top ${limit} by request volume`;
+  const subtitle = `Top ${limit} by request volume`;
 
   return (
     <section>
@@ -437,18 +447,17 @@ export function TenantRanking() {
         subtitle={subtitle}
         right={
           <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-            {[...TOP_OPTIONS, "all" as const].map((n) => {
+            {TOP_OPTIONS.map((n) => {
               const active = topN === n;
-              const label = n === "all" ? "All" : `Top ${n}`;
               return (
                 <button
-                  key={String(n)}
+                  key={n}
                   onClick={() => setTopN(n)}
                   className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
                     active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  {label}
+                  {`Top ${n}`}
                 </button>
               );
             })}
