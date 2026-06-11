@@ -1,8 +1,8 @@
 import { useUsage } from "@/lib/usage/context";
 import { useMemo, useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine,
-  ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart,
+  ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
 } from "recharts";
 import {
   ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight,
@@ -15,7 +15,8 @@ import {
   getFilteredData, getTotals, getActiveTenants, getActiveServices,
   getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
-  getUsageConcentration, getPrevTotals, getCompareData,
+  getUsageConcentration, getPrevTotals,
+  getServiceSparkline, getTopTenantsByRps, getHeatmap,
   windowToHours, formatIndian, formatCompact,
   type WindowHours,
 } from "@/data/aggregations";
