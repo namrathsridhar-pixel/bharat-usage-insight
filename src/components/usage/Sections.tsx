@@ -463,7 +463,7 @@ export function ThroughputLoad({ singleLineOnly = false }: { singleLineOnly?: bo
         </Card>
       </div>
       <Card className="p-5">
-        {!singleLineOnly && breakdown && (
+        {showBreakdownBtn && breakdown && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-[11px] text-slate-600">
             <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#1F2937]" /> Platform total</span>
             {tenantSwatches.map((t) => (
