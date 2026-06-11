@@ -143,7 +143,7 @@ export function PlatformAdoption() {
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
     ...top5.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
-    ...(rest.length ? [{ name: "Others", value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+    ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
   const top3Pct = concentration.slice(0, 3).reduce((a, r) => a + r.pct, 0);
 
