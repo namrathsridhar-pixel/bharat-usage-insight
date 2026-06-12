@@ -160,7 +160,7 @@ export function PlatformAdoption() {
         {/* Sub-group 1: Platform Snapshot */}
         <div>
           <div className="mb-3 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
-            Platform snapshot
+            Tenant overview
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 auto-rows-fr">
             {snapshotItems.map((it, i) => (
