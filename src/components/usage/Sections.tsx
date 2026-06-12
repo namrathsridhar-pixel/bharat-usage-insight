@@ -150,70 +150,94 @@ export function PlatformAdoption() {
   ];
   const donutTopPct = topSlice.reduce((a, r) => a + r.pct, 0);
 
+  const snapshotItems = items.slice(0, 5);
+  const avgItem = items[5];
+
   return (
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
-        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-          {/* Left: 6 KPI cards (70%) */}
-          <div className="lg:col-span-7">
-            <div className="grid grid-cols-3 gap-3 h-full auto-rows-fr">
-              {items.map((it, i) => (
-                <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
-                  <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-                  <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-                  <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
-                  {it.delta !== undefined && <div className="mt-1"><Delta pct={it.delta} /></div>}
-                </div>
-              ))}
-            </div>
+        {/* Sub-group 1: Platform Snapshot */}
+        <div>
+          <div className="mb-3 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+            Platform snapshot
           </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 auto-rows-fr">
+            {snapshotItems.map((it, i) => (
+              <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
+                <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
+                <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+                <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-          {/* Right: Usage concentration donut (30%) */}
-          <div className="lg:col-span-3 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
-            <div className="flex items-baseline justify-between mb-3 gap-2">
-              <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+        {/* Divider */}
+        <div className="my-5 h-px w-full bg-slate-200" />
+
+        {/* Sub-group 2: Consumption Overview */}
+        <div>
+          <div className="mb-3 flex items-baseline justify-between gap-2">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+              Consumption overview
+            </div>
+            <div className="text-[10px] italic text-slate-400">reflects selected time window · {windowLabel}</div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+            {/* Left: Avg Requests per Tenant */}
+            <div className="lg:col-span-4">
+              <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
+                <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{avgItem.label}</div>
+                <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{avgItem.value}</div>
+                <div className="mt-1 text-[11px] text-slate-500">{avgItem.sub}</div>
+                {avgItem.delta !== undefined && <div className="mt-1"><Delta pct={avgItem.delta} /></div>}
+              </div>
+            </div>
+
+            {/* Right: Usage concentration donut */}
+            <div className="lg:col-span-6 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
+              <div className="mb-3 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
                 Usage concentration
               </div>
-              <div className="text-[10px] text-slate-400">{windowLabel}</div>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="relative" style={{ width: 160, height: 160 }}>
-                <ResponsiveContainer width={160} height={160}>
-                  <PieChart>
-                    <Pie
-                      data={donut}
-                      dataKey="value"
-                      innerRadius={50}
-                      outerRadius={76}
-                      paddingAngle={1}
-                      stroke="#fff"
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                    >
-                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
-                      separator="  "
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
-                  <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
-                </div>
-              </div>
-              <div className="w-full mt-3 space-y-1.5">
-                {donut.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
-                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
-                    <span className="shrink-0 text-slate-700 truncate max-w-[60%]">{d.name}</span>
-                    <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
-                    <span className="tabular-nums text-slate-600 shrink-0 text-right w-12">{d.pct.toFixed(2)}%</span>
+              <div className="flex items-center gap-5">
+                <div className="relative shrink-0" style={{ width: 160, height: 160 }}>
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={donut}
+                        dataKey="value"
+                        innerRadius={50}
+                        outerRadius={76}
+                        paddingAngle={1}
+                        stroke="#fff"
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                      >
+                        {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                        formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                        separator="  "
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
+                    <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
                   </div>
-                ))}
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  {donut.map((d) => (
+                    <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
+                      <span className="shrink-0 text-slate-700 truncate max-w-[60%]">{d.name}</span>
+                      <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
+                      <span className="tabular-nums text-slate-600 shrink-0 text-right w-12">{d.pct.toFixed(2)}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
