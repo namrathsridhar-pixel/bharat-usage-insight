@@ -294,7 +294,8 @@ export function getRpsData(
   const allRows = getFilteredData({ windowHours: 720 });
   const baseline = +(allRows.reduce((a, r) => a + r.requests, 0) / (720 * 3600)).toFixed(2);
 
-  // Identify the highest visible point on the chart (matches chart dataKey).
+  // Peak shown above the chart MUST match the highest visible point on the chart
+  // (uses the same dataKey the LineChart renders).
   const isDaily = windowHours === 168 || windowHours === 720;
   let topIdx = 0;
   let topVal = -Infinity;
@@ -303,13 +304,10 @@ export function getRpsData(
     if (v > topVal) { topVal = v; topIdx = i; }
   });
   const peakLabelFinal = points[topIdx]?.label ?? peakLabel;
+  const peakFinal = +Math.max(0, topVal).toFixed(2);
 
-  // Enforce Peak >= Avg * burst (1.5x..3x). Deterministic per window.
-  const burst = 1.5 + ((windowHours * 7) % 100) / 100 * 1.5; // 1.5..3.0
-  const minPeak = +(avgRps * burst).toFixed(2);
-  const peakFinal = Math.max(+peakRps.toFixed(2), minPeak, +(avgRps * 1.5).toFixed(2));
+  return { points, avgRps, peakRps: peakFinal, peakLabel: peakLabelFinal, baseline };
 
-  return { points, avgRps, peakRps: +peakFinal.toFixed(2), peakLabel: peakLabelFinal, baseline };
 }
 
 /* ---------- usage concentration (across selected window) ---------- */

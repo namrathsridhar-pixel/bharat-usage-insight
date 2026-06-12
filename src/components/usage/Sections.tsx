@@ -80,6 +80,8 @@ export function PlatformPulse() {
   const prevRows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId]);
   const prevActive = isTenantView ? getActiveServices(prevRows) : getActiveTenants(prevRows);
 
+
+
   const items = [
     { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
     { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
