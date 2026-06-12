@@ -77,12 +77,9 @@ export function PlatformPulse() {
 
   const isTenantView = !!effectiveTenant;
   const activeCount = isTenantView ? getActiveServices(rows) : getActiveTenants(rows);
-  const prevRows = useMemo(() => {
-    const prevWindow = (windowHours * 2) as WindowHours;
-    return getFilteredData({ windowHours: prevWindow, tenantId })
-      .filter((r) => r.hour < (720 - windowHours)); // crude: rows older than current window
-  }, [windowHours, tenantId]);
+  const prevRows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId]);
   const prevActive = isTenantView ? getActiveServices(prevRows) : getActiveTenants(prevRows);
+
 
 
   const items = [
