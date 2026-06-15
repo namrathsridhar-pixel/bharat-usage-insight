@@ -659,35 +659,6 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
           </LineChart>
         </ResponsiveContainer>
 
-        {!isTenantScoped && topTenants.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-slate-100">
-            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500 mb-2">Top tenants by throughput</div>
-            <div className="divide-y divide-slate-100">
-              <div className="flex items-center text-[10px] uppercase tracking-wider text-slate-400 pb-1.5">
-                <div className="flex-1">Tenant</div>
-                <div className="w-24 text-right tabular-nums">Avg RPS</div>
-                <div className="w-24 text-right tabular-nums">Peak RPS</div>
-              </div>
-              {topTenants.map((t) => (
-                <div key={t.tenant.id} className="flex items-center py-2 text-sm">
-                  <div className="flex-1 flex items-center gap-2.5 min-w-0">
-                    <span className="h-7 w-1.5 rounded-sm shrink-0" style={{ background: t.tenant.avatarColor }} aria-hidden />
-                    <span
-                      className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
-                      style={{ background: t.tenant.avatarColor }}
-                      aria-hidden
-                    >
-                      {t.tenant.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-                    </span>
-                    <span className="text-slate-800 truncate">{t.tenant.name}</span>
-                  </div>
-                  <div className="w-24 text-right tabular-nums text-slate-900 font-medium">{t.avgRps}</div>
-                  <div className="w-24 text-right tabular-nums text-slate-600">{t.peakRps}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </Card>
     </section>
   );
