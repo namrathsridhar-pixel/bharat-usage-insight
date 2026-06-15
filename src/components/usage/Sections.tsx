@@ -274,15 +274,15 @@ export function ConsumptionOverview() {
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
-          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col h-full col-span-1 lg:col-span-2 xl:col-span-1">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
+            <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
               Top tenants by throughput
             </div>
-            <div className="mb-3 text-[11px] text-slate-500">Top 5 by avg RPS · reflects selected time window</div>
+            <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
             {rpsByTenant.length === 0 ? (
               <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
             ) : (
-              <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="flex items-center gap-4 min-w-0">
                 <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -307,20 +307,25 @@ export function ConsumptionOverview() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">Top {rpsByTenant.length}</div>
-                    <div className="text-[10px] text-slate-500 mt-1 leading-none">tenants</div>
+                    <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
+                    <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center gap-2 pb-1 border-b border-slate-100" style={{ fontSize: 11 }}>
                     <span className="shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
-                    <span className="flex-1 min-w-0 uppercase tracking-wider text-slate-400">Tenant</span>
-                    <span className="text-right shrink-0 uppercase tracking-wider text-slate-400" style={{ width: 78 }}>Avg RPS</span>
+                    <span className="flex-1 min-w-0 uppercase tracking-wider font-semibold text-slate-600">Tenant</span>
+                    <span className="text-right shrink-0 uppercase tracking-wider font-semibold text-slate-600" style={{ width: 78 }}>Avg RPS</span>
                   </div>
                   {rpsByTenant.map((t) => (
-                    <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                    <div
+                      key={t.id}
+                      title={`${t.name} — ${t.avgRps.toFixed(3)} req/s avg`}
+                      className="flex items-start gap-2"
+                      style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
+                    >
                       <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
-                      <span className="flex-1 min-w-0 text-slate-700 leading-tight break-words">{t.name}</span>
+                      <span className="flex-1 min-w-0 text-slate-900 leading-tight" style={{ wordBreak: "normal", overflowWrap: "break-word" }}>{t.name}</span>
                       <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
                     </div>
                   ))}
