@@ -213,17 +213,9 @@ export function ConsumptionOverview() {
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] items-start">
-          {/* Left: Avg Requests per Tenant — top aligned, content height only */}
-          <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4">
-            <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">Avg requests per tenant</div>
-            <div className="mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
-            <div className="mt-1 text-[11px] text-slate-400">across active tenants</div>
-            <div className="mt-2"><Delta pct={avgDelta} /></div>
-          </div>
-
-          {/* Middle: Usage concentration donut */}
-          <div className="relative min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
+          {/* Left: Usage concentration donut */}
+          <div className="relative min-w-0 flex flex-col">
             <div className="mb-1 flex items-center justify-between gap-2">
               <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
                 Usage concentration
@@ -279,7 +271,7 @@ export function ConsumptionOverview() {
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
-          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
+          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
             <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
               Top tenants by throughput
             </div>
