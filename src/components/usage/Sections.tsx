@@ -983,7 +983,7 @@ export function CompareTenants() {
                             const pct = total ? (v / total) * 100 : 0;
                             const svc = SERVICES.find((x) => x.key === k)!;
                             return (
-                              <td key={k} className="p-0.5">
+                              <td key={k} className="p-0.5" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
                                 <div
                                   className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
