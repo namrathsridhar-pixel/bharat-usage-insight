@@ -30,7 +30,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               <span className="text-slate-900">AI</span>
               <span className="text-orange-500">4</span>
             </div>
-            <div className="text-[9px] font-semibold tracking-[0.15em] text-slate-600 leading-none whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity">INCLUSION</div>
+            <div className="hidden group-hover/sidebar:block text-[9px] font-semibold tracking-[0.15em] text-slate-600 leading-none whitespace-nowrap">INCLUSION</div>
           </div>
         </div>
 
