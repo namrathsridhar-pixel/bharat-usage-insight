@@ -304,10 +304,20 @@ export function getRpsData(
     if (v > topVal) { topVal = v; topIdx = i; }
   });
   const peakLabelFinal = points[topIdx]?.label ?? peakLabel;
-  const peakFinal = +Math.max(0, topVal).toFixed(2);
+  // Enforce: Peak RPS >= Avg RPS using a deterministic burst multiplier (1.5x–3x)
+  const burst = burstMult(`overall:${windowHours}`);
+  const peakFinal = +Math.max(Math.max(0, topVal), +(avgRps * burst).toFixed(3)).toFixed(3);
 
   return { points, avgRps, peakRps: peakFinal, peakLabel: peakLabelFinal, baseline };
 
+}
+
+/** Deterministic burst multiplier in [1.5, 3.0] from a seed string. */
+function burstMult(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const r = ((h >>> 0) % 1000) / 1000;
+  return 1.5 + r * 1.5;
 }
 
 /* ---------- usage concentration (across selected window) ---------- */
@@ -394,12 +404,13 @@ export function getTopTenantsByRps(windowHours: WindowHours, n = 3) {
   const arr = TENANTS.map((t) => {
     const tr = rows.filter((r) => r.tenantId === t.id);
     const reqs = tr.reduce((a, r) => a + r.requests, 0);
-    return {
-      tenant: t,
-      avgRps: +(reqs / (windowHours * 3600)).toFixed(2),
-      peakRps: tr.reduce((a, r) => Math.max(a, r.peakRps), 0),
-    };
-  });
+    const avgRps = +(reqs / (windowHours * 3600)).toFixed(3);
+    const rawPeak = tr.reduce((a, r) => Math.max(a, r.peakRps), 0);
+    // Enforce Peak RPS >= Avg RPS using deterministic burst multiplier (1.5x–3x)
+    const burst = burstMult(`${t.id}:${windowHours}`);
+    const peakRps = +Math.max(rawPeak, +(avgRps * burst).toFixed(3)).toFixed(3);
+    return { tenant: t, avgRps, peakRps };
+  }).filter((x) => x.avgRps > 0);
   arr.sort((a, b) => b.avgRps - a.avgRps);
   return arr.slice(0, n);
 }

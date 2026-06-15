@@ -74,12 +74,14 @@ export function useUpdatedAgo(): string {
   const { lastUpdatedAt } = useUsage();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60_000);
+    const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
   const diff = Math.max(0, Math.floor((now - lastUpdatedAt) / 1000));
   const m = Math.floor(diff / 60);
   if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  return `${Math.floor(m / 60)}h ago`;
+  if (m === 1) return "1 min ago";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  return h === 1 ? "1 hour ago" : `${h} hours ago`;
 }
