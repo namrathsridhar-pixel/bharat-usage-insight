@@ -51,6 +51,18 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
 }
 
 
+/** Abbreviate long service names so they always fit on a single line in tables. */
+const SERVICE_ABBR: Record<string, string> = {
+  "Language Detection": "Lang. Detection",
+  "Audio Language Detection": "Audio Lang. Detection",
+  "Speaker Diarization": "Spk. Diarization",
+  "Transliteration": "Translit.",
+};
+function abbrService(name: string): string {
+  return SERVICE_ABBR[name] ?? name;
+}
+
+
 function useScope() {
   const { window, effectiveTenant } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "24h" : window) as WindowHours;
