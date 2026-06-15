@@ -404,12 +404,13 @@ export function getTopTenantsByRps(windowHours: WindowHours, n = 3) {
   const arr = TENANTS.map((t) => {
     const tr = rows.filter((r) => r.tenantId === t.id);
     const reqs = tr.reduce((a, r) => a + r.requests, 0);
-    return {
-      tenant: t,
-      avgRps: +(reqs / (windowHours * 3600)).toFixed(2),
-      peakRps: tr.reduce((a, r) => Math.max(a, r.peakRps), 0),
-    };
-  });
+    const avgRps = +(reqs / (windowHours * 3600)).toFixed(3);
+    const rawPeak = tr.reduce((a, r) => Math.max(a, r.peakRps), 0);
+    // Enforce Peak RPS >= Avg RPS using deterministic burst multiplier (1.5x–3x)
+    const burst = burstMult(`${t.id}:${windowHours}`);
+    const peakRps = +Math.max(rawPeak, +(avgRps * burst).toFixed(3)).toFixed(3);
+    return { tenant: t, avgRps, peakRps };
+  }).filter((x) => x.avgRps > 0);
   arr.sort((a, b) => b.avgRps - a.avgRps);
   return arr.slice(0, n);
 }
