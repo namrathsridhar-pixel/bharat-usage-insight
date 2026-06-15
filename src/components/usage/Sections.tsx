@@ -173,7 +173,7 @@ export function ConsumptionOverview() {
     ...topSlice.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
     ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
-  void topSlice;
+  
 
   // Throughput donut — same top 5 tenants/colors as Usage Concentration
   const rpsByTenant = useMemo(() => {
