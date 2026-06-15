@@ -61,8 +61,9 @@ function PageInner() {
           <ThroughputLoad />
           {/* 7. Service breakdown (+ tenant ranking / service mix side panel) */}
           {isTenantScoped ? (
-            <div className="grid grid-cols-1 gap-6 items-start">
-              <ServiceMix />
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+              <div className="lg:col-span-3"><ServiceBreakdown /></div>
+              <div className="lg:col-span-2"><ServiceMix /></div>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
@@ -70,8 +71,9 @@ function PageInner() {
               <div className="lg:col-span-2"><TenantRanking /></div>
             </div>
           )}
-          {/* 8. Usage by tenant & service heatmap */}
-          <CompareTenants />
+          {/* 8. Usage by tenant & service heatmap — platform-wide only */}
+          {!isTenantScoped && <CompareTenants />}
+
 
         </div>
       </LoadingOverlay>
