@@ -21,19 +21,21 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div className="flex min-h-screen bg-white text-slate-900">
-      <aside className="w-[260px] shrink-0 border-r border-slate-200 bg-[#FAFBFC] flex flex-col">
-        <div className="px-4 pt-4 pb-3 border-b border-slate-200">
-          <div className="inline-flex items-center gap-2 rounded-md bg-white border border-slate-200 px-3 py-2 shadow-sm">
-            <div className="font-black text-[15px] tracking-tight leading-none">
+      <aside
+        className="group/sidebar shrink-0 border-r border-slate-200 bg-[#FAFBFC] flex flex-col transition-[width] duration-200 ease-out w-[64px] hover:w-[260px] z-30"
+      >
+        <div className="px-3 pt-4 pb-3 border-b border-slate-200">
+          <div className="inline-flex items-center gap-2 rounded-md bg-white border border-slate-200 px-2.5 py-2 shadow-sm">
+            <div className="font-black text-[15px] tracking-tight leading-none whitespace-nowrap">
               <span className="text-slate-900">AI</span>
               <span className="text-orange-500">4</span>
             </div>
-            <div className="text-[9px] font-semibold tracking-[0.15em] text-slate-600 leading-none">INCLUSION</div>
+            <div className="text-[9px] font-semibold tracking-[0.15em] text-slate-600 leading-none whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity">INCLUSION</div>
           </div>
         </div>
 
 
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {NAV_TOP.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.to;
@@ -41,13 +43,14 @@ export function PortalShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.label}
                 to={item.to}
+                title={item.label}
                 className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition relative ${
                   active ? "bg-orange-50 text-orange-600 font-medium" : "text-slate-700 hover:bg-slate-100"
                 }`}
               >
                 {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-orange-500" />}
                 <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.8} />
-                <span className="truncate">{item.label}</span>
+                <span className="truncate whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-150">{item.label}</span>
               </Link>
             );
           })}
