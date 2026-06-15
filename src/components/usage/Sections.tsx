@@ -950,10 +950,10 @@ export function CompareTenants() {
                       {selected.map((k) => {
                         const s = SERVICES.find((x) => x.key === k)!;
                         return (
-                          <th key={k} className="px-1 pb-2 align-bottom" style={{ minWidth: 64 }}>
-                            <div className="inline-flex flex-col items-center gap-1">
+                          <th key={k} className="px-1 pb-2 align-bottom" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
+                            <div className="flex flex-col items-center gap-1">
                               <span className="h-1.5 w-6 rounded-sm" style={{ background: s.color }} />
-                              <span className="text-slate-600 font-medium whitespace-nowrap" style={{ writingMode: "horizontal-tb" }}>{s.name}</span>
+                              <span className="text-slate-600 font-medium whitespace-nowrap" title={s.name}>{abbrService(s.name)}</span>
                             </div>
                           </th>
                         );
