@@ -92,15 +92,17 @@ export function PlatformPulse() {
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
   const avgPerTenantDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
-  const items = [
+  const allItems = [
     { label: "Total requests",         value: formatKMB(totals.totalRequests),         delta: reqDelta,           sub: "across selected window" },
     { label: "Success rate",           value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,          sub: "of all requests" },
     { label: "Avg RPS (req/s)",        value: `${avgRps}`,                              delta: rpsDelta,           sub: "requests per second" },
     { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),                  delta: avgPerTenantDelta,  sub: "across active tenants" },
   ];
+  const items = tenantId ? allItems.slice(0, 3) : allItems;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
+    <div className={`grid grid-cols-2 ${tenantId ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-3 items-stretch`}>
+
       {items.map((it, i) => (
         <div
           key={i}
