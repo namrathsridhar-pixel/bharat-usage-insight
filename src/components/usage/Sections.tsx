@@ -186,9 +186,9 @@ export function PlatformAdoption() {
             </div>
             <div className="text-[10px] italic text-slate-400">reflects selected time window · {windowLabel}</div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
             {/* Left: Avg Requests per Tenant */}
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-3">
               <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
                 <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{avgItem.label}</div>
                 <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{avgItem.value}</div>
@@ -197,8 +197,8 @@ export function PlatformAdoption() {
               </div>
             </div>
 
-            {/* Right: Usage concentration donut */}
-            <div className="lg:col-span-6 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
+            {/* Middle: Usage concentration donut */}
+            <div className="lg:col-span-5 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
               <div className="mb-3 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
                 Usage concentration
               </div>
@@ -242,10 +242,48 @@ export function PlatformAdoption() {
                 </div>
               </div>
             </div>
+
+            {/* Right: Top Tenants by Throughput */}
+            <div className="lg:col-span-4 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+              <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+                Top tenants by throughput
+              </div>
+              <div className="mb-3 text-[11px] text-slate-500">Top 5 by avg RPS · reflects selected time window</div>
+              <TopTenantsThroughputList windowHours={windowHours} n={5} />
+            </div>
           </div>
         </div>
       </Card>
     </section>
+  );
+}
+
+/* Top tenants by throughput list — used inside Consumption Overview */
+function TopTenantsThroughputList({ windowHours, n }: { windowHours: WindowHours; n: number }) {
+  const top = useMemo(() => getTopTenantsByRps(windowHours, n), [windowHours, n]);
+  if (top.length === 0) {
+    return <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>;
+  }
+  return (
+    <div className="flex-1 flex flex-col">
+      <div className="flex items-center text-[10px] uppercase tracking-wider text-slate-400 pb-1.5 border-b border-slate-100">
+        <div className="flex-1">Tenant</div>
+        <div className="w-24 text-right">Avg RPS (req/s)</div>
+        <div className="w-24 text-right">Peak RPS (req/s)</div>
+      </div>
+      <div className="divide-y divide-slate-100">
+        {top.map((t) => (
+          <div key={t.tenant.id} className="flex items-center py-2 text-sm">
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.tenant.avatarColor }} aria-hidden />
+              <span className="text-slate-800 truncate text-[12px]">{t.tenant.name}</span>
+            </div>
+            <div className="w-24 text-right tabular-nums text-slate-900 font-medium text-[12px]">{t.avgRps.toFixed(3)}</div>
+            <div className="w-24 text-right tabular-nums text-slate-600 text-[12px]">{t.peakRps.toFixed(3)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
