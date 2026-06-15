@@ -220,10 +220,6 @@ export function ConsumptionOverview() {
             <div className="mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
             <div className="mt-1 text-[11px] text-slate-400">across active tenants</div>
             <div className="mt-2"><Delta pct={avgDelta} /></div>
-            <div className="mt-3 pt-3 text-[11px] text-slate-500 border-t border-slate-100">
-              <div className="flex justify-between"><span>Active tenants</span><span className="tabular-nums text-slate-700 font-medium">{activeCount}</span></div>
-              <div className="mt-1 flex justify-between"><span>Previous period</span><span className="tabular-nums text-slate-700 font-medium">{formatKMB(prevAvgPerTenant)}</span></div>
-            </div>
           </div>
 
           {/* Middle: Usage concentration donut */}
@@ -232,9 +228,6 @@ export function ConsumptionOverview() {
               <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
                 Usage concentration
               </div>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
-                Fixed · Top 5
-              </span>
             </div>
             <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
             <div className="flex items-center gap-4 min-w-0">
@@ -957,10 +950,10 @@ export function CompareTenants() {
                       {selected.map((k) => {
                         const s = SERVICES.find((x) => x.key === k)!;
                         return (
-                          <th key={k} className="px-1 pb-2 align-bottom" style={{ minWidth: 64 }}>
-                            <div className="inline-flex flex-col items-center gap-1">
+                          <th key={k} className="px-1 pb-2 align-bottom" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
+                            <div className="flex flex-col items-center gap-1">
                               <span className="h-1.5 w-6 rounded-sm" style={{ background: s.color }} />
-                              <span className="text-slate-600 font-medium whitespace-nowrap" style={{ writingMode: "horizontal-tb" }}>{s.name}</span>
+                              <span className="text-slate-600 font-medium whitespace-nowrap" title={s.name}>{abbrService(s.name)}</span>
                             </div>
                           </th>
                         );
@@ -990,7 +983,7 @@ export function CompareTenants() {
                             const pct = total ? (v / total) * 100 : 0;
                             const svc = SERVICES.find((x) => x.key === k)!;
                             return (
-                              <td key={k} className="p-0.5">
+                              <td key={k} className="p-0.5" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
                                 <div
                                   className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
