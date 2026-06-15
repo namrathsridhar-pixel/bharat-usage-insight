@@ -101,25 +101,29 @@ export function PlatformPulse() {
 ========================================================= */
 export function TenantOverview() {
   const items = [
-    { label: "Total tenants",   value: TENANTS.length,         sub: "registered on platform" },
-    { label: "Active tenants",  value: getActiveTenants24h(),  sub: "last 24 hours" },
-    { label: "Active tenants",  value: getActiveTenants7d(),   sub: "last 7 days" },
-    { label: "Active tenants",  value: getActiveTenants30d(),  sub: "last 30 days" },
-    { label: "New — Last 7 days", value: getNewTenants7d(),    sub: "onboarded" },
+    { label: "Total tenants",     value: TENANTS.length,        sub: "registered on platform",      period: "all time" },
+    { label: "Active tenants",    value: getActiveTenants24h(), sub: "last 24 hours",               period: "last 24 hours" },
+    { label: "Active tenants",    value: getActiveTenants7d(),  sub: "last 7 days",                 period: "last 7 days" },
+    { label: "Active tenants",    value: getActiveTenants30d(), sub: "last 30 days",                period: "last 30 days" },
+    { label: "New — Last 7 days", value: getNewTenants7d(),     sub: "onboarded in last 7 days",    period: "last 7 days" },
   ];
   return (
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
-      <Card className="p-5">
-        <div className="mb-3 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+      <Card className="p-6">
+        <div className="mb-3 text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">
           Tenant overview
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 auto-rows-fr">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-start">
           {items.map((it, i) => (
-            <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
-              <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-              <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-              <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
+            <div
+              key={i}
+              title={`${it.label} — ${it.value} (${it.period})`}
+              className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default"
+            >
+              <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">{it.label}</div>
+              <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+              <div className="mt-1.5 text-[11px] text-slate-400">{it.sub}</div>
             </div>
           ))}
         </div>
