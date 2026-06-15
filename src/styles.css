@@ -110,3 +110,24 @@
 .press-anim:active {
   animation: press-shrink 150ms ease-out;
 }
+
+/* Subtle scrollbar for internal scroll panels */
+.scroll-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+.scroll-subtle::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-subtle::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 3px;
+}
+.scroll-subtle::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+.scroll-subtle::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
