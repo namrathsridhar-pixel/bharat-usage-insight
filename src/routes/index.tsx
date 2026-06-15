@@ -3,7 +3,7 @@ import { UsageProvider, useUsage } from "@/lib/usage/context";
 import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
 import {
-  PlatformPulse, PlatformAdoption, VolumeHealth, ServiceBreakdown,
+  PlatformPulse, TenantOverview, ConsumptionOverview, VolumeHealth, ServiceBreakdown,
   TenantRanking, ServiceMix, ThroughputLoad, CompareTenants, LoadingOverlay,
 } from "@/components/usage/Sections";
 import { Toaster } from "@/components/ui/sonner";
@@ -43,20 +43,30 @@ function PageInner() {
         </p>
       </div>
 
+      {/* 1. Tenant Overview — always at top, fixed, above filter */}
+      <TenantOverview />
+
+      {/* 2. Time window filter bar */}
       <FilterBar />
 
       <LoadingOverlay>
         <div className="space-y-8">
+          {/* 3. Top KPI cards (3 cards) */}
           <PlatformPulse />
-          {!isTenantScoped && <PlatformAdoption />}
+          {/* 4. Consumption overview (3 panels) */}
+          {!isTenantScoped && <ConsumptionOverview />}
+          {/* 5. Request volume & health */}
           <VolumeHealth />
+          {/* 6. Throughput & load */}
+          <ThroughputLoad />
+          {/* 7. Service breakdown (+ tenant ranking / service mix side panel) */}
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="lg:col-span-3"><ServiceBreakdown /></div>
             <div className="lg:col-span-2">
               {isTenantScoped ? <ServiceMix /> : <TenantRanking />}
             </div>
           </div>
-          <ThroughputLoad />
+          {/* 8. Usage by tenant & service heatmap */}
           <CompareTenants />
         </div>
       </LoadingOverlay>
