@@ -255,16 +255,16 @@ export function ConsumptionOverview() {
             {rpsByTenant.length === 0 ? (
               <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
             ) : (
-              <div className="flex items-center gap-4 flex-1">
-                <div className="relative shrink-0" style={{ width: 150, height: 150 }}>
-                  <ResponsiveContainer width={150} height={150}>
+              <div className="flex items-center gap-5 flex-1">
+                <div className="relative shrink-0" style={{ width: 160, height: 160 }}>
+                  <ResponsiveContainer width={160} height={160}>
                     <PieChart>
                       <Pie
                         data={rpsByTenant}
                         dataKey="avgRps"
                         nameKey="name"
-                        innerRadius={46}
-                        outerRadius={71}
+                        innerRadius={50}
+                        outerRadius={76}
                         paddingAngle={1}
                         stroke="#fff"
                         strokeWidth={2}
@@ -280,22 +280,24 @@ export function ConsumptionOverview() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[14px] font-bold text-slate-900 tabular-nums leading-none">Top {rpsByTenant.length}</div>
+                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">Top {rpsByTenant.length}</div>
                     <div className="text-[10px] text-slate-500 mt-1">avg RPS</div>
                   </div>
                 </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center text-[9px] uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100">
-                    <div className="flex-1">Tenant</div>
-                    <div className="w-12 text-right">Avg</div>
-                    <div className="w-12 text-right">Peak</div>
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100">
+                    <span className="h-2 w-2 shrink-0" aria-hidden />
+                    <span className="flex-1">Tenant</span>
+                    <span className="w-[88px] text-right">Avg RPS (req/s)</span>
+                    <span className="w-[88px] text-right">Peak RPS (req/s)</span>
                   </div>
                   {rpsByTenant.map((t) => (
-                    <div key={t.id} className="flex items-center gap-1.5 text-[11px] py-0.5">
+                    <div key={t.id} className="flex items-center gap-2 text-[11px]">
                       <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.color }} />
-                      <span className="flex-1 text-slate-700 truncate">{t.name}</span>
-                      <span className="w-12 text-right tabular-nums text-slate-900 font-medium">{t.avgRps.toFixed(3)}</span>
-                      <span className="w-12 text-right tabular-nums text-slate-600">{t.peakRps.toFixed(3)}</span>
+                      <span className="shrink min-w-0 text-slate-700 break-words leading-tight">{t.name}</span>
+                      <span className="flex-1 border-b border-dotted border-slate-300 mx-1 min-w-[8px]" aria-hidden />
+                      <span className="w-[88px] text-right tabular-nums text-slate-900 font-medium shrink-0">{t.avgRps.toFixed(3)}</span>
+                      <span className="w-[88px] text-right tabular-nums text-slate-600 shrink-0">{t.peakRps.toFixed(3)}</span>
                     </div>
                   ))}
                 </div>
