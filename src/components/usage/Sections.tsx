@@ -51,6 +51,18 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
 }
 
 
+/** Abbreviate long service names so they always fit on a single line in tables. */
+const SERVICE_ABBR: Record<string, string> = {
+  "Language Detection": "Lang. Detection",
+  "Audio Language Detection": "Audio Lang. Detection",
+  "Speaker Diarization": "Spk. Diarization",
+  "Transliteration": "Translit.",
+};
+function abbrService(name: string): string {
+  return SERVICE_ABBR[name] ?? name;
+}
+
+
 function useScope() {
   const { window, effectiveTenant } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "24h" : window) as WindowHours;
@@ -71,25 +83,34 @@ export function PlatformPulse() {
   const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(3);
   const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(3);
 
+  const activeCount = Math.max(1, getActiveTenants(rows));
+  const avgPerTenant = Math.round(totals.totalRequests / activeCount);
+  const prevAvgPerTenant = Math.round(prev.totalRequests / activeCount);
+
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
   const srDelta = (totals.successRate - prev.successRate) * 100;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
+  const avgPerTenantDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
   const items = [
-    { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
-    { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
-    { label: "Avg RPS (req/s)", value: `${avgRps}`, delta: rpsDelta },
+    { label: "Total requests",         value: formatKMB(totals.totalRequests),         delta: reqDelta,           sub: "across selected window" },
+    { label: "Success rate",           value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,          sub: "of all requests" },
+    { label: "Avg RPS (req/s)",        value: `${avgRps}`,                              delta: rpsDelta,           sub: "requests per second" },
+    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),                  delta: avgPerTenantDelta,  sub: "across active tenants" },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-y border-slate-200 py-5">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
       {items.map((it, i) => (
-        <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0">
-          <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-          <div key={tick} className="pulse-fade mt-2 flex items-baseline gap-1.5">
-            <div className="text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-          </div>
+        <div
+          key={i}
+          title={`${it.label}: ${it.value}`}
+          className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default flex flex-col"
+        >
+          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">{it.label}</div>
+          <div key={tick} className="pulse-fade mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
           <div className="mt-2"><Delta pct={it.delta} /></div>
+          <div className="mt-1 text-[11px] text-slate-400">{it.sub}</div>
         </div>
       ))}
     </div>
@@ -101,25 +122,29 @@ export function PlatformPulse() {
 ========================================================= */
 export function TenantOverview() {
   const items = [
-    { label: "Total tenants",   value: TENANTS.length,         sub: "registered on platform" },
-    { label: "Active tenants",  value: getActiveTenants24h(),  sub: "last 24 hours" },
-    { label: "Active tenants",  value: getActiveTenants7d(),   sub: "last 7 days" },
-    { label: "Active tenants",  value: getActiveTenants30d(),  sub: "last 30 days" },
-    { label: "New — Last 7 days", value: getNewTenants7d(),    sub: "onboarded" },
+    { label: "Total tenants",     value: TENANTS.length,        sub: "registered on platform",      period: "all time" },
+    { label: "Active tenants",    value: getActiveTenants24h(), sub: "last 24 hours",               period: "last 24 hours" },
+    { label: "Active tenants",    value: getActiveTenants7d(),  sub: "last 7 days",                 period: "last 7 days" },
+    { label: "Active tenants",    value: getActiveTenants30d(), sub: "last 30 days",                period: "last 30 days" },
+    { label: "New — Last 7 days", value: getNewTenants7d(),     sub: "onboarded in last 7 days",    period: "last 7 days" },
   ];
   return (
     <section>
       <Eyebrow>Platform adoption</Eyebrow>
-      <Card className="p-5">
-        <div className="mb-3 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+      <Card className="p-6">
+        <div className="mb-3 text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">
           Tenant overview
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 auto-rows-fr">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 items-start">
           {items.map((it, i) => (
-            <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
-              <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-              <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-              <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
+            <div
+              key={i}
+              title={`${it.label} — ${it.value} (${it.period})`}
+              className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default"
+            >
+              <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">{it.label}</div>
+              <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+              <div className="mt-1.5 text-[11px] text-slate-400">{it.sub}</div>
             </div>
           ))}
         </div>
@@ -160,7 +185,7 @@ export function ConsumptionOverview() {
     ...topSlice.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
     ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
-  const donutTopPct = topSlice.reduce((a, r) => a + r.pct, 0);
+  
 
   // Throughput donut — same top 5 tenants/colors as Usage Concentration
   const rpsByTenant = useMemo(() => {
@@ -188,26 +213,31 @@ export function ConsumptionOverview() {
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] items-stretch">
-          {/* Left: Avg Requests per Tenant — stretches full height */}
-          <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 h-full">
-            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg requests per tenant</div>
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] items-start">
+          {/* Left: Avg Requests per Tenant — top aligned, content height only */}
+          <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4">
+            <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">Avg requests per tenant</div>
             <div className="mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
-            <div className="mt-1 text-[11px] text-slate-500">across active tenants</div>
+            <div className="mt-1 text-[11px] text-slate-400">across active tenants</div>
             <div className="mt-2"><Delta pct={avgDelta} /></div>
-            <div className="mt-auto pt-4 text-[11px] text-slate-500 border-t border-slate-100">
+            <div className="mt-3 pt-3 text-[11px] text-slate-500 border-t border-slate-100">
               <div className="flex justify-between"><span>Active tenants</span><span className="tabular-nums text-slate-700 font-medium">{activeCount}</span></div>
               <div className="mt-1 flex justify-between"><span>Previous period</span><span className="tabular-nums text-slate-700 font-medium">{formatKMB(prevAvgPerTenant)}</span></div>
             </div>
           </div>
 
           {/* Middle: Usage concentration donut */}
-          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col h-full">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
-              Usage concentration
+          <div className="relative min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+                Usage concentration
+              </div>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
+                Fixed · Top 5
+              </span>
             </div>
-            <div className="mb-3 text-[11px] text-slate-500">Top 5 by request volume · reflects selected time window</div>
-            <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
+            <div className="flex items-center gap-4 min-w-0">
               <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -231,32 +261,40 @@ export function ConsumptionOverview() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
-                  <div className="text-[10px] text-slate-500 mt-1 leading-none">top {donutTopCount} tenants</div>
+                  <div className="text-[20px] font-bold text-slate-900 leading-none">Top {donutTopCount}</div>
+                  <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                 </div>
               </div>
               <div className="flex-1 min-w-0 space-y-1.5">
-                {donut.map((d) => (
-                  <div key={d.name} className="flex items-start gap-2" style={{ fontSize: 12 }}>
-                    <span className="rounded-full shrink-0 mt-[5px]" style={{ background: d.color, width: 8, height: 8 }} />
-                    <span className="flex-1 min-w-0 text-slate-700 leading-tight break-words">{d.name}</span>
-                    <span className="tabular-nums text-slate-600 shrink-0 text-right" style={{ width: 52 }}>{d.pct.toFixed(2)}%</span>
-                  </div>
-                ))}
+                {donut.map((d) => {
+                  const isOthers = d.name.startsWith("Others");
+                  return (
+                    <div
+                      key={d.name}
+                      title={`${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
+                      className="flex items-start gap-2"
+                      style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
+                    >
+                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: isOthers ? "#94A3B8" : d.color, width: 8, height: 8 }} />
+                      <span className={`flex-1 min-w-0 leading-tight ${isOthers ? "text-slate-400 italic" : "text-slate-900"}`} style={{ wordBreak: "normal", overflowWrap: "break-word" }}>{d.name}</span>
+                      <span className={`tabular-nums font-semibold shrink-0 text-right ${isOthers ? "text-slate-400" : "text-slate-900"}`} style={{ width: 56, fontSize: 12 }}>{d.pct.toFixed(2)}%</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
-          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col h-full col-span-1 lg:col-span-2 xl:col-span-1">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
+            <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
               Top tenants by throughput
             </div>
-            <div className="mb-3 text-[11px] text-slate-500">Top 5 by avg RPS · reflects selected time window</div>
+            <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
             {rpsByTenant.length === 0 ? (
               <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
             ) : (
-              <div className="flex items-center gap-4 min-w-0 flex-1">
+              <div className="flex items-center gap-4 min-w-0">
                 <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -281,20 +319,25 @@ export function ConsumptionOverview() {
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">Top {rpsByTenant.length}</div>
-                    <div className="text-[10px] text-slate-500 mt-1 leading-none">tenants</div>
+                    <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
+                    <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center gap-2 pb-1 border-b border-slate-100" style={{ fontSize: 11 }}>
                     <span className="shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
-                    <span className="flex-1 min-w-0 uppercase tracking-wider text-slate-400">Tenant</span>
-                    <span className="text-right shrink-0 uppercase tracking-wider text-slate-400" style={{ width: 78 }}>Avg RPS</span>
+                    <span className="flex-1 min-w-0 uppercase tracking-wider font-semibold text-slate-600">Tenant</span>
+                    <span className="text-right shrink-0 uppercase tracking-wider font-semibold text-slate-600" style={{ width: 78 }}>Avg RPS</span>
                   </div>
                   {rpsByTenant.map((t) => (
-                    <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                    <div
+                      key={t.id}
+                      title={`${t.name} — ${t.avgRps.toFixed(3)} req/s avg`}
+                      className="flex items-start gap-2"
+                      style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
+                    >
                       <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
-                      <span className="flex-1 min-w-0 text-slate-700 leading-tight break-words">{t.name}</span>
+                      <span className="flex-1 min-w-0 text-slate-900 leading-tight" style={{ wordBreak: "normal", overflowWrap: "break-word" }}>{t.name}</span>
                       <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
                     </div>
                   ))}
@@ -469,10 +512,10 @@ export function ServiceBreakdown() {
                 const failRate = r.requests ? (r.failed / r.requests) * 100 : 0;
                 const failClr = failRate > 1 ? "text-rose-600" : "text-slate-500";
                 return (
-                  <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-                    <td className="py-3 pl-4 pr-3 relative">
+                  <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60" style={{ height: 48 }}>
+                    <td className="py-3 pl-4 pr-3 relative" title={r.service.name}>
                       <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: r.service.color }} />
-                      <span className="font-medium text-slate-900">{r.service.name}</span>
+                      <span className="font-medium text-slate-900 whitespace-nowrap">{abbrService(r.service.name)}</span>
                     </td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatLakhCr(r.requests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
@@ -584,7 +627,10 @@ export function TenantRanking() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3">
                       <div className="flex items-baseline gap-2 min-w-0">
-                        <span className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}>{r.tenant.name}</span>
+                        <span
+                          title={r.tenant.name}
+                          className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}
+                        >{r.tenant.name}</span>
                         <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] border ${
                           r.inactive
                             ? "bg-slate-50 border-slate-200 text-slate-400"
@@ -608,6 +654,12 @@ export function TenantRanking() {
                         {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
+                    {!r.inactive && (
+                      <div className="mt-1 flex items-center justify-between text-[10px] tabular-nums text-slate-500">
+                        <span>Avg RPS <span className="text-slate-700 font-medium">{r.avgRps.toFixed(3)}</span></span>
+                        <span>Peak RPS <span className="text-slate-700 font-medium">{Math.max(r.peakRps, r.avgRps).toFixed(3)}</span></span>
+                      </div>
+                    )}
                     {r.inactive && (
                       <div className="mt-1 text-[10px] text-slate-400 italic">No activity this period</div>
                     )}
@@ -654,9 +706,12 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Peak</div>
-          <div className="mt-1 text-[20px] leading-none font-semibold text-slate-900 tabular-nums">
-            {peakRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s · {window === "1h" ? `${peakLabel} ago` : peakLabel}</span>
+          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">Peak RPS</div>
+          <div className="mt-1 text-[26px] leading-none font-bold text-slate-900 tabular-nums">
+            {Math.max(peakRps, avgRps).toFixed(3)}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
+          </div>
+          <div className="mt-1.5 text-[12px] text-slate-500 tabular-nums">
+            {Math.max(peakRps, avgRps).toFixed(3)} req/s · {window === "1h" ? `${peakLabel} ago` : peakLabel}
           </div>
         </Card>
       </div>

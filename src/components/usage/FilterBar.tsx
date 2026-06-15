@@ -3,7 +3,7 @@ import { useUsage, useUpdatedAgo } from "@/lib/usage/context";
 import type { TimeWindow } from "@/lib/usage/context";
 import { TENANTS, type TenantMeta } from "@/data/eventLog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { Check, ChevronDown, Search, Users, X, Grid3x3 } from "lucide-react";
 
 const CHIPS: { key: TimeWindow; label: string }[] = [
@@ -137,19 +137,6 @@ export function FilterBar() {
               </button>
             );
           })}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  disabled
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border bg-white text-slate-400 border-slate-200 cursor-not-allowed"
-                >
-                  Custom range
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Coming soon</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
 
         <div className="flex-1" />
