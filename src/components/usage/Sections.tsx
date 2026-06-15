@@ -627,7 +627,10 @@ export function TenantRanking() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3">
                       <div className="flex items-baseline gap-2 min-w-0">
-                        <span className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}>{r.tenant.name}</span>
+                        <span
+                          title={r.tenant.name}
+                          className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}
+                        >{r.tenant.name}</span>
                         <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] border ${
                           r.inactive
                             ? "bg-slate-50 border-slate-200 text-slate-400"
@@ -651,6 +654,12 @@ export function TenantRanking() {
                         {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
+                    {!r.inactive && (
+                      <div className="mt-1 flex items-center justify-between text-[10px] tabular-nums text-slate-500">
+                        <span>Avg RPS <span className="text-slate-700 font-medium">{r.avgRps.toFixed(3)}</span></span>
+                        <span>Peak RPS <span className="text-slate-700 font-medium">{Math.max(r.peakRps, r.avgRps).toFixed(3)}</span></span>
+                      </div>
+                    )}
                     {r.inactive && (
                       <div className="mt-1 text-[10px] text-slate-400 italic">No activity this period</div>
                     )}
