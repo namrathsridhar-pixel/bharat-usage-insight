@@ -112,9 +112,10 @@ function TenantDropdown() {
 }
 
 export function FilterBar() {
-  const { window, setWindow, effectiveTenant, setSelectedTenantId } = useUsage();
+  const { window, setWindow, effectiveTenant, setSelectedTenantId, lastUpdatedAt } = useUsage();
   const ago = useUpdatedAgo();
-  const isLive = window === "1h" || window === "24h";
+  const minutesAgo = Math.floor(Math.max(0, Date.now() - lastUpdatedAt) / 60000);
+  const stale = minutesAgo > 5;
 
   return (
     <div className="space-y-2">
@@ -155,24 +156,17 @@ export function FilterBar() {
 
         <TenantDropdown />
 
-        <div className="inline-flex items-center gap-2 text-[12px] text-slate-600">
-          {isLive ? (
-            <>
-              <span className="relative inline-flex h-2 w-2">
-                <span className="absolute inset-0 rounded-full bg-emerald-500 live-dot" />
-              </span>
-              <span className="font-medium text-slate-700">Live</span>
-              <span className="text-slate-400">·</span>
-              <span>Updated {ago}</span>
-            </>
-          ) : (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-slate-300" />
-              Historical data
-            </span>
-          )}
+        <div className={`inline-flex items-center gap-2 text-[12px] ${stale ? "text-amber-700" : "text-slate-600"}`}>
+          <span className="relative inline-flex h-2 w-2">
+            <span className={`absolute inset-0 rounded-full ${stale ? "bg-amber-500" : "bg-emerald-500 live-dot"}`} />
+          </span>
+          <span>
+            Last refreshed: {ago}
+            {stale && " · data may be stale"}
+          </span>
         </div>
       </div>
+
 
       {effectiveTenant && (
         <div className="flex">
