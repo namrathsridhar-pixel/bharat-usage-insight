@@ -615,10 +615,6 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
     () => getRpsData(rows, windowHours, []),
     [rows, windowHours]
   );
-  const topTenants = useMemo(
-    () => (isTenantScoped ? [] : getTopTenantsByRps(windowHours, 3)),
-    [windowHours, isTenantScoped, tick]
-  );
 
   const _peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
 
