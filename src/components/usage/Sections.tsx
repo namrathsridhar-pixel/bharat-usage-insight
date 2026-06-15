@@ -288,16 +288,14 @@ export function ConsumptionOverview() {
                   <div className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100">
                     <span className="h-2 w-2 shrink-0" aria-hidden />
                     <span className="flex-1 min-w-0">Tenant</span>
-                    <span className="w-[72px] text-right shrink-0">Avg RPS</span>
-                    <span className="w-[72px] text-right shrink-0">Peak RPS</span>
+                    <span className="w-[88px] text-right shrink-0">Avg RPS (req/s)</span>
                   </div>
                   {rpsByTenant.map((t) => (
                     <div key={t.id} className="flex items-center gap-2 text-[11px]">
                       <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.color }} />
                       <span className="shrink min-w-0 max-w-full text-slate-700 break-words leading-tight">{t.name}</span>
                       <span className="flex-1 border-b border-dotted border-slate-300 mx-1 min-w-[8px]" aria-hidden />
-                      <span className="w-[72px] text-right tabular-nums text-slate-900 font-medium shrink-0">{t.avgRps.toFixed(3)}</span>
-                      <span className="w-[72px] text-right tabular-nums text-slate-600 shrink-0">{t.peakRps.toFixed(3)}</span>
+                      <span className="w-[88px] text-right tabular-nums text-slate-900 font-medium shrink-0">{t.avgRps.toFixed(3)}</span>
                     </div>
                   ))}
                 </div>
