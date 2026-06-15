@@ -181,17 +181,17 @@ export function ConsumptionOverview() {
 
   return (
     <section>
-      <Card className="p-5">
+      <Card className="p-6">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
             Consumption overview
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,3fr)_minmax(280px,5fr)_minmax(280px,4fr)] gap-6 items-stretch">
-          {/* Left: Avg Requests per Tenant */}
-          <div className="min-w-0">
-            <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
+        <div className="flex flex-col xl:flex-row xl:items-start gap-6">
+          {/* Left: Avg Requests per Tenant — fixed 280px, auto height */}
+          <div className="w-full xl:w-[280px] xl:shrink-0">
+            <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg requests per tenant</div>
               <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
               <div className="mt-1 text-[11px] text-slate-500">across active tenants</div>
@@ -200,20 +200,20 @@ export function ConsumptionOverview() {
           </div>
 
           {/* Middle: Usage concentration donut */}
-          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col">
+          <div className="flex-1 min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col">
             <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
               Usage concentration
             </div>
             <div className="mb-3 text-[11px] text-slate-500">Top 5 by request volume · reflects selected time window</div>
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="relative shrink-0 w-[140px] sm:w-[160px] aspect-square">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="relative shrink-0" style={{ width: 280, height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={donut}
                       dataKey="value"
-                      innerRadius="65%"
-                      outerRadius="100%"
+                      innerRadius={80}
+                      outerRadius={110}
                       paddingAngle={1}
                       stroke="#fff"
                       strokeWidth={2}
@@ -235,11 +235,11 @@ export function ConsumptionOverview() {
               </div>
               <div className="flex-1 min-w-0 space-y-1.5">
                 {donut.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
-                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
-                    <span className="shrink min-w-0 max-w-full text-slate-700 break-words leading-tight">{d.name}</span>
-                    <span className="flex-1 border-b border-dotted border-slate-300 mx-1 min-w-[8px]" aria-hidden />
-                    <span className="tabular-nums text-slate-600 shrink-0 text-right w-12">{d.pct.toFixed(2)}%</span>
+                  <div key={d.name} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                    <span className="rounded-full shrink-0 mt-[5px]" style={{ background: d.color, width: 8, height: 8 }} />
+                    <span className="flex-1 min-w-0 text-slate-700 leading-tight" style={{ wordBreak: "normal", overflowWrap: "break-word", minWidth: 160 }}>{d.name}</span>
+                    <span className="self-center flex-1 border-b border-dotted border-slate-300 mx-1 min-w-[8px]" aria-hidden />
+                    <span className="tabular-nums text-slate-600 shrink-0 text-right" style={{ width: 55 }}>{d.pct.toFixed(2)}%</span>
                   </div>
                 ))}
               </div>
@@ -247,7 +247,7 @@ export function ConsumptionOverview() {
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
-          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col">
+          <div className="flex-1 min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col">
             <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
               Top tenants by throughput
             </div>
@@ -255,16 +255,16 @@ export function ConsumptionOverview() {
             {rpsByTenant.length === 0 ? (
               <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
             ) : (
-              <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="relative shrink-0 w-[140px] sm:w-[160px] aspect-square">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="relative shrink-0" style={{ width: 280, height: 280 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={rpsByTenant}
                         dataKey="avgRps"
                         nameKey="name"
-                        innerRadius="65%"
-                        outerRadius="100%"
+                        innerRadius={80}
+                        outerRadius={110}
                         paddingAngle={1}
                         stroke="#fff"
                         strokeWidth={2}
@@ -285,16 +285,16 @@ export function ConsumptionOverview() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100">
-                    <span className="h-2 w-2 shrink-0" aria-hidden />
-                    <span className="flex-1 min-w-0">Tenant</span>
-                    <span className="w-[88px] text-right shrink-0">Avg RPS (req/s)</span>
+                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100" style={{ fontSize: 11 }}>
+                    <span className="shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
+                    <span className="flex-1 min-w-0 uppercase tracking-wider text-slate-400" style={{ minWidth: 160 }}>Tenant</span>
+                    <span className="text-right shrink-0 uppercase tracking-wider text-slate-400" style={{ width: 80 }}>Avg RPS (req/s)</span>
                   </div>
                   {rpsByTenant.map((t) => (
-                    <div key={t.id} className="flex items-center gap-2 text-[11px]">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.color }} />
-                      <span className="flex-1 min-w-0 text-slate-700 leading-tight break-words">{t.name}</span>
-                      <span className="w-[88px] text-right tabular-nums text-slate-900 font-medium shrink-0">{t.avgRps.toFixed(3)}</span>
+                    <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
+                      <span className="flex-1 min-w-0 text-slate-700 leading-tight" style={{ wordBreak: "normal", overflowWrap: "break-word", minWidth: 160 }}>{t.name}</span>
+                      <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 80 }}>{t.avgRps.toFixed(3)}</span>
                     </div>
                   ))}
                 </div>
