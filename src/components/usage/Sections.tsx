@@ -182,11 +182,11 @@ export function ConsumptionOverview() {
   return (
     <section>
       <Card className="p-5">
-        <div className="mb-3 flex items-baseline justify-between gap-2">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
             Consumption overview
           </div>
-          <div className="text-[10px] italic text-slate-400">reflects selected time window · {windowLabel}</div>
+          <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           {/* Left: Avg Requests per Tenant */}
