@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Usage & Metering · AI4I Orchestrate" },
+      { title: "Usage Dashboard · AI4I Orchestrate" },
       { name: "description", content: "Monitor service consumption, tenant activity, and platform throughput across AI4I Orchestrate." },
     ],
   }),
@@ -35,7 +35,7 @@ function PageInner() {
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Usage &amp; Metering</h1>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Usage Dashboard</h1>
         <p className="mt-1 text-sm text-slate-500">
           {isTenantScoped
             ? `Service consumption and throughput for ${effectiveTenant!.name}`
@@ -50,7 +50,7 @@ function PageInner() {
       <FilterBar />
 
       <LoadingOverlay>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* 3. Top KPI cards (3 cards) */}
           <PlatformPulse />
           {/* 4. Consumption overview (3 panels) */}
@@ -60,7 +60,7 @@ function PageInner() {
           {/* 6. Throughput & load */}
           <ThroughputLoad />
           {/* 7. Service breakdown (+ tenant ranking / service mix side panel) */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
             <div className="lg:col-span-3"><ServiceBreakdown /></div>
             <div className="lg:col-span-2">
               {isTenantScoped ? <ServiceMix /> : <TenantRanking />}
