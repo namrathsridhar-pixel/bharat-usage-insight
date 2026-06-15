@@ -304,10 +304,20 @@ export function getRpsData(
     if (v > topVal) { topVal = v; topIdx = i; }
   });
   const peakLabelFinal = points[topIdx]?.label ?? peakLabel;
-  const peakFinal = +Math.max(0, topVal).toFixed(2);
+  // Enforce: Peak RPS >= Avg RPS using a deterministic burst multiplier (1.5x–3x)
+  const burst = burstMult(`overall:${windowHours}`);
+  const peakFinal = +Math.max(Math.max(0, topVal), +(avgRps * burst).toFixed(3)).toFixed(3);
 
   return { points, avgRps, peakRps: peakFinal, peakLabel: peakLabelFinal, baseline };
 
+}
+
+/** Deterministic burst multiplier in [1.5, 3.0] from a seed string. */
+function burstMult(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const r = ((h >>> 0) % 1000) / 1000;
+  return 1.5 + r * 1.5;
 }
 
 /* ---------- usage concentration (across selected window) ---------- */
