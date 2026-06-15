@@ -500,10 +500,10 @@ export function ServiceBreakdown() {
                 const failRate = r.requests ? (r.failed / r.requests) * 100 : 0;
                 const failClr = failRate > 1 ? "text-rose-600" : "text-slate-500";
                 return (
-                  <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-                    <td className="py-3 pl-4 pr-3 relative">
+                  <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60" style={{ height: 48 }}>
+                    <td className="py-3 pl-4 pr-3 relative" title={r.service.name}>
                       <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: r.service.color }} />
-                      <span className="font-medium text-slate-900">{r.service.name}</span>
+                      <span className="font-medium text-slate-900 whitespace-nowrap">{abbrService(r.service.name)}</span>
                     </td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatLakhCr(r.requests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
