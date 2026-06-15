@@ -71,25 +71,34 @@ export function PlatformPulse() {
   const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(3);
   const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(3);
 
+  const activeCount = Math.max(1, getActiveTenants(rows));
+  const avgPerTenant = Math.round(totals.totalRequests / activeCount);
+  const prevAvgPerTenant = Math.round(prev.totalRequests / activeCount);
+
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
   const srDelta = (totals.successRate - prev.successRate) * 100;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
+  const avgPerTenantDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
   const items = [
-    { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
-    { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
-    { label: "Avg RPS (req/s)", value: `${avgRps}`, delta: rpsDelta },
+    { label: "Total requests",         value: formatKMB(totals.totalRequests),         delta: reqDelta,           sub: "across selected window" },
+    { label: "Success rate",           value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,          sub: "of all requests" },
+    { label: "Avg RPS (req/s)",        value: `${avgRps}`,                              delta: rpsDelta,           sub: "requests per second" },
+    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),                  delta: avgPerTenantDelta,  sub: "across active tenants" },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-y border-slate-200 py-5">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
       {items.map((it, i) => (
-        <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0">
-          <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-          <div key={tick} className="pulse-fade mt-2 flex items-baseline gap-1.5">
-            <div className="text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-          </div>
+        <div
+          key={i}
+          title={`${it.label}: ${it.value}`}
+          className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default flex flex-col"
+        >
+          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">{it.label}</div>
+          <div key={tick} className="pulse-fade mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
           <div className="mt-2"><Delta pct={it.delta} /></div>
+          <div className="mt-1 text-[11px] text-slate-400">{it.sub}</div>
         </div>
       ))}
     </div>
