@@ -552,7 +552,7 @@ export function TenantRanking() {
       >
         Tenant ranking
       </Eyebrow>
-      <Card className="p-3">
+      <Card className="p-3 max-h-[520px] overflow-y-auto scroll-subtle">
         <div className="space-y-0.5">
           {visible.length === 0 && (
             <div className="px-3 py-6 text-center text-xs text-slate-400">No tenants in this period</div>
