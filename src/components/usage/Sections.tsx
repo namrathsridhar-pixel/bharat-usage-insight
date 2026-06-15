@@ -12,11 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TENANTS, SERVICES } from "@/data/eventLog";
 import {
-  getFilteredData, getTotals, getActiveTenants, getActiveServices,
+  getFilteredData, getTotals, getActiveTenants,
   getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
   getUsageConcentration, getPrevTotals,
-  getTopTenantsByRps, getHeatmap,
+  getHeatmap,
   windowToHours, formatIndian, formatKMB, formatLakhCr,
   type WindowHours,
 } from "@/data/aggregations";
@@ -59,46 +59,35 @@ function useScope() {
 }
 
 /* =========================================================
-   ZONE 1 — Platform Pulse
+   ZONE 1 — Platform Pulse (3 KPI cards)
 ========================================================= */
 export function PlatformPulse() {
   const { windowHours, tenantId } = useScope();
-  const { tick, effectiveTenant } = useUsage();
+  const { tick } = useUsage();
 
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const totals = useMemo(() => getTotals(rows), [rows]);
   const prev = useMemo(() => getPrevTotals(windowHours, tenantId), [windowHours, tenantId]);
-  const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(2);
-  const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(2);
+  const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(3);
+  const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(3);
 
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
   const srDelta = (totals.successRate - prev.successRate) * 100;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
 
-  const isTenantView = !!effectiveTenant;
-  const activeCount = isTenantView ? getActiveServices(rows) : getActiveTenants(rows);
-  const prevRows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId]);
-  const prevActive = isTenantView ? getActiveServices(prevRows) : getActiveTenants(prevRows);
-
-
-
   const items = [
     { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
     { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
-    { label: "Avg RPS", value: `${avgRps}`, suffix: "req/s", delta: rpsDelta },
-    isTenantView
-      ? { label: "Active services", value: `${activeCount}`, suffix: `of ${SERVICES.length}`, delta: 0 }
-      : { label: "Active tenants", value: `${activeCount}`, suffix: `of ${TENANTS.length}`, delta: activeCount - prevActive, tip: "Tenants with ≥1 inference in the selected period" },
+    { label: "Avg RPS (req/s)", value: `${avgRps}`, delta: rpsDelta },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-y border-slate-200 py-5">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-y border-slate-200 py-5">
       {items.map((it, i) => (
-        <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0" title={"tip" in it ? it.tip : undefined}>
+        <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0">
           <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
           <div key={tick} className="pulse-fade mt-2 flex items-baseline gap-1.5">
             <div className="text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-            {"suffix" in it && it.suffix && <div className="text-xs text-slate-500">{it.suffix}</div>}
           </div>
           <div className="mt-2"><Delta pct={it.delta} /></div>
         </div>
@@ -108,9 +97,41 @@ export function PlatformPulse() {
 }
 
 /* =========================================================
-   ZONE 2 — Platform Adoption
+   ZONE 2A — Tenant Overview (fixed, above filter bar)
 ========================================================= */
-export function PlatformAdoption() {
+export function TenantOverview() {
+  const items = [
+    { label: "Total tenants",   value: TENANTS.length,         sub: "registered on platform" },
+    { label: "Active tenants",  value: getActiveTenants24h(),  sub: "last 24 hours" },
+    { label: "Active tenants",  value: getActiveTenants7d(),   sub: "last 7 days" },
+    { label: "Active tenants",  value: getActiveTenants30d(),  sub: "last 30 days" },
+    { label: "New — Last 7 days", value: getNewTenants7d(),    sub: "onboarded" },
+  ];
+  return (
+    <section>
+      <Eyebrow>Platform adoption</Eyebrow>
+      <Card className="p-5">
+        <div className="mb-3 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+          Tenant overview
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 auto-rows-fr">
+          {items.map((it, i) => (
+            <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
+              <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
+              <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+              <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </section>
+  );
+}
+
+/* =========================================================
+   ZONE 2B — Consumption Overview (3 panels)
+========================================================= */
+export function ConsumptionOverview() {
   const { window } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
   const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
@@ -127,19 +148,8 @@ export function PlatformAdoption() {
   const prevAvgPerTenant = Math.round(prevTotals.totalRequests / activeCount);
   const avgDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
-  type Item = { label: string; value: React.ReactNode; sub: string; delta?: number };
-  const items: Item[] = [
-    { label: "Total tenants",         value: TENANTS.length,             sub: "registered on platform" },
-    { label: "Active tenants",        value: getActiveTenants24h(),      sub: "last 24 hours" },
-    { label: "Active tenants",        value: getActiveTenants7d(),       sub: "last 7 days" },
-    { label: "Active tenants",        value: getActiveTenants30d(),      sub: "last 30 days" },
-    { label: "New — Last 7 days",     value: getNewTenants7d(),          sub: "onboarded" },
-    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),  sub: "across active tenants", delta: avgDelta },
-  ];
-
-  // Fixed Top 5 for usage concentration donut
+  // Fixed Top 5 — same 5 tenants drive both donuts
   const concTopN = 5;
-
   const active = concentration.filter((c) => c.requests > 0);
   const donutTopCount = Math.min(concTopN, active.length);
   const topSlice = active.slice(0, donutTopCount);
@@ -152,138 +162,149 @@ export function PlatformAdoption() {
   ];
   const donutTopPct = topSlice.reduce((a, r) => a + r.pct, 0);
 
-  const snapshotItems = items.slice(0, 5);
-  const avgItem = items[5];
+  // Throughput donut — same top 5 tenants/colors as Usage Concentration
+  const rpsByTenant = useMemo(() => {
+    return topSlice.map((c) => {
+      const tr = curRows.filter((r) => r.tenantId === c.id);
+      const reqs = tr.reduce((a, r) => a + r.requests, 0);
+      const avgRps = +(reqs / (windowHours * 3600)).toFixed(3);
+      const rawPeak = tr.reduce((a, r) => Math.max(a, r.peakRps), 0);
+      // burst multiplier (1.5x–3x), deterministic
+      let h = 2166136261;
+      const seed = `${c.id}:${windowHours}`;
+      for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+      const burst = 1.5 + (((h >>> 0) % 1000) / 1000) * 1.5;
+      const peakRps = +Math.max(rawPeak, +(avgRps * burst).toFixed(3)).toFixed(3);
+      return { id: c.id, name: c.name, color: c.color, avgRps, peakRps };
+    });
+  }, [topSlice, curRows, windowHours]);
 
   return (
     <section>
-      <Eyebrow>Platform adoption</Eyebrow>
       <Card className="p-5">
-        {/* Sub-group 1: Platform Snapshot */}
-        <div>
-          <div className="mb-3 text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
-            Tenant overview
+        <div className="mb-3 flex items-baseline justify-between gap-2">
+          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+            Consumption overview
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 auto-rows-fr">
-            {snapshotItems.map((it, i) => (
-              <div key={i} className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
-                <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
-                <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-                <div className="mt-1 text-[11px] text-slate-500">{it.sub}</div>
-              </div>
-            ))}
-          </div>
+          <div className="text-[10px] italic text-slate-400">reflects selected time window · {windowLabel}</div>
         </div>
-
-        {/* Divider */}
-        <div className="my-5 h-px w-full bg-slate-200" />
-
-        {/* Sub-group 2: Consumption Overview */}
-        <div>
-          <div className="mb-3 flex items-baseline justify-between gap-2">
-            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
-              Consumption overview
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Left: Avg Requests per Tenant */}
+          <div className="lg:col-span-3">
+            <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
+              <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg requests per tenant</div>
+              <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
+              <div className="mt-1 text-[11px] text-slate-500">across active tenants</div>
+              <div className="mt-1"><Delta pct={avgDelta} /></div>
             </div>
-            <div className="text-[10px] italic text-slate-400">reflects selected time window · {windowLabel}</div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            {/* Left: Avg Requests per Tenant */}
-            <div className="lg:col-span-3">
-              <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-3 h-full">
-                <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">{avgItem.label}</div>
-                <div className="mt-1 text-[22px] leading-none font-bold text-slate-900 tabular-nums">{avgItem.value}</div>
-                <div className="mt-1 text-[11px] text-slate-500">{avgItem.sub}</div>
-                {avgItem.delta !== undefined && <div className="mt-1"><Delta pct={avgItem.delta} /></div>}
+
+          {/* Middle: Usage concentration donut */}
+          <div className="lg:col-span-5 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+            <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+              Usage concentration
+            </div>
+            <div className="mb-3 text-[11px] text-slate-500">Top 5 by request volume · reflects selected time window</div>
+            <div className="flex items-center gap-5 flex-1">
+              <div className="relative shrink-0" style={{ width: 160, height: 160 }}>
+                <ResponsiveContainer width={160} height={160}>
+                  <PieChart>
+                    <Pie
+                      data={donut}
+                      dataKey="value"
+                      innerRadius={50}
+                      outerRadius={76}
+                      paddingAngle={1}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                    >
+                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                      separator="  "
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
+                  <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
+                </div>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                {donut.map((d) => (
+                  <div key={d.name} className="flex items-center gap-2 text-[11px]">
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
+                    <span className="shrink-0 text-slate-700 truncate max-w-[60%]">{d.name}</span>
+                    <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
+                    <span className="tabular-nums text-slate-600 shrink-0 text-right w-12">{d.pct.toFixed(2)}%</span>
+                  </div>
+                ))}
               </div>
             </div>
+          </div>
 
-            {/* Middle: Usage concentration donut */}
-            <div className="lg:col-span-5 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col justify-center">
-              <div className="mb-3 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
-                Usage concentration
-              </div>
-              <div className="flex items-center gap-5">
-                <div className="relative shrink-0" style={{ width: 160, height: 160 }}>
-                  <ResponsiveContainer width={160} height={160}>
+          {/* Right: Top Tenants by Throughput — donut */}
+          <div className="lg:col-span-4 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+            <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
+              Top tenants by throughput
+            </div>
+            <div className="mb-3 text-[11px] text-slate-500">Top 5 by avg RPS · reflects selected time window</div>
+            {rpsByTenant.length === 0 ? (
+              <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
+            ) : (
+              <div className="flex items-center gap-4 flex-1">
+                <div className="relative shrink-0" style={{ width: 150, height: 150 }}>
+                  <ResponsiveContainer width={150} height={150}>
                     <PieChart>
                       <Pie
-                        data={donut}
-                        dataKey="value"
-                        innerRadius={50}
-                        outerRadius={76}
+                        data={rpsByTenant}
+                        dataKey="avgRps"
+                        nameKey="name"
+                        innerRadius={46}
+                        outerRadius={71}
                         paddingAngle={1}
                         stroke="#fff"
                         strokeWidth={2}
                         isAnimationActive={false}
                       >
-                        {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        {rpsByTenant.map((d, i) => <Cell key={i} fill={d.color} />)}
                       </Pie>
                       <Tooltip
                         contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                        formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                        formatter={(v: number, _n, p: any) => [`${v.toFixed(3)} req/s · peak ${p.payload.peakRps.toFixed(3)}`, p.payload.name]}
                         separator="  "
                       />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
-                    <div className="text-[10px] text-slate-500 mt-1">top {donutTopCount} tenants</div>
+                    <div className="text-[14px] font-bold text-slate-900 tabular-nums leading-none">Top {rpsByTenant.length}</div>
+                    <div className="text-[10px] text-slate-500 mt-1">avg RPS</div>
                   </div>
                 </div>
-                <div className="flex-1 space-y-1.5">
-                  {donut.map((d) => (
-                    <div key={d.name} className="flex items-center gap-2 text-[11px]">
-                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: d.color }} />
-                      <span className="shrink-0 text-slate-700 truncate max-w-[60%]">{d.name}</span>
-                      <span className="flex-1 border-b border-dotted border-slate-300 mx-1" aria-hidden />
-                      <span className="tabular-nums text-slate-600 shrink-0 text-right w-12">{d.pct.toFixed(2)}%</span>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center text-[9px] uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100">
+                    <div className="flex-1">Tenant</div>
+                    <div className="w-12 text-right">Avg</div>
+                    <div className="w-12 text-right">Peak</div>
+                  </div>
+                  {rpsByTenant.map((t) => (
+                    <div key={t.id} className="flex items-center gap-1.5 text-[11px] py-0.5">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.color }} />
+                      <span className="flex-1 text-slate-700 truncate">{t.name}</span>
+                      <span className="w-12 text-right tabular-nums text-slate-900 font-medium">{t.avgRps.toFixed(3)}</span>
+                      <span className="w-12 text-right tabular-nums text-slate-600">{t.peakRps.toFixed(3)}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-
-            {/* Right: Top Tenants by Throughput */}
-            <div className="lg:col-span-4 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
-              <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
-                Top tenants by throughput
-              </div>
-              <div className="mb-3 text-[11px] text-slate-500">Top 5 by avg RPS · reflects selected time window</div>
-              <TopTenantsThroughputList windowHours={windowHours} n={5} />
-            </div>
+            )}
           </div>
         </div>
       </Card>
     </section>
-  );
-}
-
-/* Top tenants by throughput list — used inside Consumption Overview */
-function TopTenantsThroughputList({ windowHours, n }: { windowHours: WindowHours; n: number }) {
-  const top = useMemo(() => getTopTenantsByRps(windowHours, n), [windowHours, n]);
-  if (top.length === 0) {
-    return <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>;
-  }
-  return (
-    <div className="flex-1 flex flex-col">
-      <div className="flex items-center text-[10px] uppercase tracking-wider text-slate-400 pb-1.5 border-b border-slate-100">
-        <div className="flex-1">Tenant</div>
-        <div className="w-24 text-right">Avg RPS (req/s)</div>
-        <div className="w-24 text-right">Peak RPS (req/s)</div>
-      </div>
-      <div className="divide-y divide-slate-100">
-        {top.map((t) => (
-          <div key={t.tenant.id} className="flex items-center py-2 text-sm">
-            <div className="flex-1 flex items-center gap-2 min-w-0">
-              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.tenant.avatarColor }} aria-hidden />
-              <span className="text-slate-800 truncate text-[12px]">{t.tenant.name}</span>
-            </div>
-            <div className="w-24 text-right tabular-nums text-slate-900 font-medium text-[12px]">{t.avgRps.toFixed(3)}</div>
-            <div className="w-24 text-right tabular-nums text-slate-600 text-[12px]">{t.peakRps.toFixed(3)}</div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
