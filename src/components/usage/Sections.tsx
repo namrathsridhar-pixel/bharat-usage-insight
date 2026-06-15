@@ -59,46 +59,35 @@ function useScope() {
 }
 
 /* =========================================================
-   ZONE 1 — Platform Pulse
+   ZONE 1 — Platform Pulse (3 KPI cards)
 ========================================================= */
 export function PlatformPulse() {
   const { windowHours, tenantId } = useScope();
-  const { tick, effectiveTenant } = useUsage();
+  const { tick } = useUsage();
 
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const totals = useMemo(() => getTotals(rows), [rows]);
   const prev = useMemo(() => getPrevTotals(windowHours, tenantId), [windowHours, tenantId]);
-  const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(2);
-  const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(2);
+  const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(3);
+  const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(3);
 
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
   const srDelta = (totals.successRate - prev.successRate) * 100;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
 
-  const isTenantView = !!effectiveTenant;
-  const activeCount = isTenantView ? getActiveServices(rows) : getActiveTenants(rows);
-  const prevRows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId]);
-  const prevActive = isTenantView ? getActiveServices(prevRows) : getActiveTenants(prevRows);
-
-
-
   const items = [
     { label: "Total requests", value: formatKMB(totals.totalRequests), delta: reqDelta },
     { label: "Success rate", value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta },
-    { label: "Avg RPS", value: `${avgRps}`, suffix: "req/s", delta: rpsDelta },
-    isTenantView
-      ? { label: "Active services", value: `${activeCount}`, suffix: `of ${SERVICES.length}`, delta: 0 }
-      : { label: "Active tenants", value: `${activeCount}`, suffix: `of ${TENANTS.length}`, delta: activeCount - prevActive, tip: "Tenants with ≥1 inference in the selected period" },
+    { label: "Avg RPS (req/s)", value: `${avgRps}`, delta: rpsDelta },
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-y border-slate-200 py-5">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 border-y border-slate-200 py-5">
       {items.map((it, i) => (
-        <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0" title={"tip" in it ? it.tip : undefined}>
+        <div key={i} className="px-2 md:px-6 first:pl-0 last:pr-0 py-4 md:py-0">
           <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">{it.label}</div>
           <div key={tick} className="pulse-fade mt-2 flex items-baseline gap-1.5">
             <div className="text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-            {"suffix" in it && it.suffix && <div className="text-xs text-slate-500">{it.suffix}</div>}
           </div>
           <div className="mt-2"><Delta pct={it.delta} /></div>
         </div>
