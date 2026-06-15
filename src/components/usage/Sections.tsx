@@ -12,11 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TENANTS, SERVICES } from "@/data/eventLog";
 import {
-  getFilteredData, getTotals, getActiveTenants, getActiveServices,
+  getFilteredData, getTotals, getActiveTenants,
   getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
   getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
   getUsageConcentration, getPrevTotals,
-  getTopTenantsByRps, getHeatmap,
+  getHeatmap,
   windowToHours, formatIndian, formatKMB, formatLakhCr,
   type WindowHours,
 } from "@/data/aggregations";
