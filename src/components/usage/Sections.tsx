@@ -201,26 +201,31 @@ export function ConsumptionOverview() {
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] items-stretch">
-          {/* Left: Avg Requests per Tenant — stretches full height */}
-          <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 h-full">
-            <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg requests per tenant</div>
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)] items-start">
+          {/* Left: Avg Requests per Tenant — top aligned, content height only */}
+          <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4">
+            <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">Avg requests per tenant</div>
             <div className="mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
-            <div className="mt-1 text-[11px] text-slate-500">across active tenants</div>
+            <div className="mt-1 text-[11px] text-slate-400">across active tenants</div>
             <div className="mt-2"><Delta pct={avgDelta} /></div>
-            <div className="mt-auto pt-4 text-[11px] text-slate-500 border-t border-slate-100">
+            <div className="mt-3 pt-3 text-[11px] text-slate-500 border-t border-slate-100">
               <div className="flex justify-between"><span>Active tenants</span><span className="tabular-nums text-slate-700 font-medium">{activeCount}</span></div>
               <div className="mt-1 flex justify-between"><span>Previous period</span><span className="tabular-nums text-slate-700 font-medium">{formatKMB(prevAvgPerTenant)}</span></div>
             </div>
           </div>
 
           {/* Middle: Usage concentration donut */}
-          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col h-full">
-            <div className="mb-1 text-[10px] uppercase tracking-[0.12em] font-semibold text-slate-500">
-              Usage concentration
+          <div className="relative min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+                Usage concentration
+              </div>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
+                Fixed · Top 5
+              </span>
             </div>
-            <div className="mb-3 text-[11px] text-slate-500">Top 5 by request volume · reflects selected time window</div>
-            <div className="flex items-center gap-4 min-w-0 flex-1">
+            <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
+            <div className="flex items-center gap-4 min-w-0">
               <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -244,18 +249,26 @@ export function ConsumptionOverview() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 tabular-nums leading-none">{donutTopPct.toFixed(0)}%</div>
-                  <div className="text-[10px] text-slate-500 mt-1 leading-none">top {donutTopCount} tenants</div>
+                  <div className="text-[20px] font-bold text-slate-900 leading-none">Top {donutTopCount}</div>
+                  <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                 </div>
               </div>
               <div className="flex-1 min-w-0 space-y-1.5">
-                {donut.map((d) => (
-                  <div key={d.name} className="flex items-start gap-2" style={{ fontSize: 12 }}>
-                    <span className="rounded-full shrink-0 mt-[5px]" style={{ background: d.color, width: 8, height: 8 }} />
-                    <span className="flex-1 min-w-0 text-slate-700 leading-tight break-words">{d.name}</span>
-                    <span className="tabular-nums text-slate-600 shrink-0 text-right" style={{ width: 52 }}>{d.pct.toFixed(2)}%</span>
-                  </div>
-                ))}
+                {donut.map((d) => {
+                  const isOthers = d.name.startsWith("Others");
+                  return (
+                    <div
+                      key={d.name}
+                      title={`${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
+                      className="flex items-start gap-2"
+                      style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
+                    >
+                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: isOthers ? "#94A3B8" : d.color, width: 8, height: 8 }} />
+                      <span className={`flex-1 min-w-0 leading-tight ${isOthers ? "text-slate-400 italic" : "text-slate-900"}`} style={{ wordBreak: "normal", overflowWrap: "break-word" }}>{d.name}</span>
+                      <span className={`tabular-nums font-semibold shrink-0 text-right ${isOthers ? "text-slate-400" : "text-slate-900"}`} style={{ width: 56, fontSize: 12 }}>{d.pct.toFixed(2)}%</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
