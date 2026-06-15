@@ -697,9 +697,12 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Peak</div>
-          <div className="mt-1 text-[20px] leading-none font-semibold text-slate-900 tabular-nums">
-            {peakRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s · {window === "1h" ? `${peakLabel} ago` : peakLabel}</span>
+          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">Peak RPS</div>
+          <div className="mt-1 text-[26px] leading-none font-bold text-slate-900 tabular-nums">
+            {Math.max(peakRps, avgRps).toFixed(3)}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
+          </div>
+          <div className="mt-1.5 text-[12px] text-slate-500 tabular-nums">
+            {Math.max(peakRps, avgRps).toFixed(3)} req/s · {window === "1h" ? `${peakLabel} ago` : peakLabel}
           </div>
         </Card>
       </div>
