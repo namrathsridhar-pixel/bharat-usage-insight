@@ -435,54 +435,30 @@ export function ServiceBreakdown() {
             <thead>
               <tr className="border-b border-slate-200">
                 <th className="py-3 pl-4 pr-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-500">Service</th>
-                <th className="py-3 px-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-500">Metering unit</th>
-                <Th k="requests">Requests</Th>
-                <Th k="nativeUnits">Native units</Th>
-                <Th k="successRate">Success %</Th>
-                <Th k="failed">Failed</Th>
-                <th className="py-3 px-3 pr-4 text-right text-[11px] uppercase tracking-wider font-semibold text-slate-500">vs prev period</th>
+                <Th k="requests">Total requests</Th>
+                <Th k="nativeUnits">Native consumption</Th>
+                <Th k="successRate">Success rate</Th>
+                <Th k="failed">Failure rate %</Th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map((r) => {
-                if (r.requests === 0) {
-                  return (
-                    <tr key={r.service.key} className="border-b border-slate-100 last:border-0">
-                      <td className="py-3 pl-4 pr-3 relative">
-                        <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: r.service.color }} />
-                        <span className="font-medium text-slate-400">{r.service.name}</span>
-                      </td>
-                      <td colSpan={6} className="py-3 px-3 text-slate-400 italic">No activity this period</td>
-                    </tr>
-                  );
-                }
+              {sorted.filter((r) => r.requests > 0).map((r) => {
                 const sr = r.successRate * 100;
                 const srClr = sr >= 95 ? "text-emerald-700" : sr >= 90 ? "text-amber-600" : "text-rose-600";
+                const failRate = r.requests ? (r.failed / r.requests) * 100 : 0;
+                const failClr = failRate > 1 ? "text-rose-600" : "text-slate-500";
                 return (
                   <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
                     <td className="py-3 pl-4 pr-3 relative">
                       <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: r.service.color }} />
                       <span className="font-medium text-slate-900">{r.service.name}</span>
                     </td>
-                    <td className="py-3 px-3 text-slate-600">{r.service.unit}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatLakhCr(r.requests)}</td>
                     <td className="py-3 px-3 text-right tabular-nums text-slate-700">
                       {formatLakhCr(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
                     </td>
                     <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-rose-600">{formatLakhCr(r.failed)}</td>
-                    <td className="py-3 px-3 pr-4 text-right tabular-nums">
-                      {r.trendPct === 0 || !isFinite(r.trendPct) ? (
-                        <span className="text-slate-400">— 0%</span>
-                      ) : r.trendPct > 0 ? (
-                        <span className="text-emerald-600">↑ {Math.abs(r.trendPct).toFixed(0)}%</span>
-                      ) : (
-                        <span className="text-rose-600">↓ {Math.abs(r.trendPct).toFixed(0)}%</span>
-                      )}
-                      <div className="text-[10px] text-slate-400 font-normal mt-0.5">
-                        {formatLakhCr(r.prevRequests)} → {formatLakhCr(r.requests)}
-                      </div>
-                    </td>
+                    <td className={`py-3 px-3 text-right tabular-nums font-medium ${failClr}`}>{failRate.toFixed(2)}%</td>
                   </tr>
                 );
               })}
