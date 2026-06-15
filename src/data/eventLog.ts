@@ -158,7 +158,8 @@ export const SERVICES: ServiceMeta[] = [
   { key: "Transliteration",    name: "Transliteration",     unit: "Characters processed",     unitShort: "chars",  color: "#A3E635", share: 0.08, failRate: 0.014, unitsPerRequest: 150 },
   { key: "Pipeline",           name: "Pipeline",            unit: "Jobs executed",            unitShort: "jobs",   color: "#A78BFA", share: 0.06, failRate: 0.038, unitsPerRequest: 3 },
   { key: "NER",                name: "NER",                 unit: "Requests processed",       unitShort: "req",    color: "#C084FC", share: 0.05, failRate: 0.029, unitsPerRequest: 1 },
-  { key: "LanguageDetection",  name: "Language Detection",  unit: "Requests processed",       unitShort: "req",    color: "#FB923C", share: 0.02, failRate: 0.012, unitsPerRequest: 1 },
+  { key: "LanguageDetection",  name: "Language Detection",  unit: "Requests processed",       unitShort: "req",    color: "#FB923C", share: 0.018, failRate: 0.012, unitsPerRequest: 1 },
+  { key: "AudioLanguageDetection", name: "Audio Language Detection", unit: "Audio minutes processed", unitShort: "min", color: "#F59E0B", share: 0.012, failRate: 0.020, unitsPerRequest: 4 },
   { key: "SpeakerDiarization", name: "Speaker Diarization", unit: "Audio minutes processed",  unitShort: "min",    color: "#94A3B8", share: 0.01, failRate: 0.035, unitsPerRequest: 8 },
 ];
 

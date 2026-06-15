@@ -137,19 +137,6 @@ export function FilterBar() {
               </button>
             );
           })}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  disabled
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border bg-white text-slate-400 border-slate-200 cursor-not-allowed"
-                >
-                  Custom range
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Coming soon</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
 
         <div className="flex-1" />
