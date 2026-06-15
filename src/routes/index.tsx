@@ -11,7 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Usage & Metering · AI4I Orchestrate" },
+      { title: "Usage Dashboard · AI4I Orchestrate" },
       { name: "description", content: "Monitor service consumption, tenant activity, and platform throughput across AI4I Orchestrate." },
     ],
   }),
