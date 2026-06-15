@@ -53,10 +53,10 @@ function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
 
 /** Abbreviate long service names so they always fit on a single line in tables. */
 const SERVICE_ABBR: Record<string, string> = {
-  "Language Detection": "Lang. Detection",
-  "Audio Language Detection": "Audio Lang. Detection",
-  "Speaker Diarization": "Spk. Diarization",
-  "Transliteration": "Translit.",
+  "Language Detection": "Text LD",
+  "Audio Language Detection": "Audio LD",
+  "Speaker Diarization": "Spk. Diar",
+  "Transliteration": "Translit",
 };
 function abbrService(name: string): string {
   return SERVICE_ABBR[name] ?? name;
