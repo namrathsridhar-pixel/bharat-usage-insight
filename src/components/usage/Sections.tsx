@@ -894,6 +894,7 @@ export function CompareTenants() {
                   </thead>
                   <tbody>
                     {[...TENANTS]
+                      .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
                       .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
                       .slice(0, heatTopN)
                       .map((t) => {
