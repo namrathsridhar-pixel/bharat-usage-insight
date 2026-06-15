@@ -271,7 +271,7 @@ export function ConsumptionOverview() {
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
-          <div className="min-w-0 xl:border-l xl:border-slate-100 xl:pl-6 flex flex-col col-span-1 lg:col-span-2 xl:col-span-1">
+          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
             <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
               Top tenants by throughput
             </div>
