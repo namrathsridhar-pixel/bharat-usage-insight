@@ -220,10 +220,6 @@ export function ConsumptionOverview() {
             <div className="mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(avgPerTenant)}</div>
             <div className="mt-1 text-[11px] text-slate-400">across active tenants</div>
             <div className="mt-2"><Delta pct={avgDelta} /></div>
-            <div className="mt-3 pt-3 text-[11px] text-slate-500 border-t border-slate-100">
-              <div className="flex justify-between"><span>Active tenants</span><span className="tabular-nums text-slate-700 font-medium">{activeCount}</span></div>
-              <div className="mt-1 flex justify-between"><span>Previous period</span><span className="tabular-nums text-slate-700 font-medium">{formatKMB(prevAvgPerTenant)}</span></div>
-            </div>
           </div>
 
           {/* Middle: Usage concentration donut */}
