@@ -492,11 +492,9 @@ export function TenantRanking() {
   }
 
   const activeRanked = ranked.filter((r) => !r.inactive);
-  const inactiveRanked = ranked.filter((r) => r.inactive);
   const limit = Math.min(topN, activeRanked.length);
-  const visibleActive = activeRanked.slice(0, limit);
+  const visible = activeRanked.slice(0, limit);
   const isExpanded = topN > 10;
-  const visible = [...visibleActive, ...(isExpanded ? inactiveRanked : [])];
 
   // K/M/B for compact (≤10), Indian K/L/Cr for detail
   const fmt = isExpanded ? formatLakhCr : formatKMB;
