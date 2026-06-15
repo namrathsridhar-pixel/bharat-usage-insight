@@ -228,9 +228,6 @@ export function ConsumptionOverview() {
               <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
                 Usage concentration
               </div>
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-400 border border-slate-200">
-                Fixed · Top 5
-              </span>
             </div>
             <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
             <div className="flex items-center gap-4 min-w-0">
