@@ -733,20 +733,18 @@ export function ServiceMix() {
   const { windowHours, tenantId } = useScope();
   const { tick, effectiveTenant } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
   const segments = useMemo(() => {
-    const total = rows.reduce((a, r) => a + r.requests, 0) || 1;
+    const total = totalRequests || 1;
     return SERVICES.map((s) => {
       const requests = rows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0);
       return { key: s.key, name: s.name, color: s.color, requests, pct: (requests / total) * 100 };
     }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
-  }, [rows]);
-
-  const shortName = (effectiveTenant?.name ?? "")
-    .split(/\s+/).map((w) => w[0]).join("").slice(0, 4).toUpperCase();
+  }, [rows, totalRequests]);
 
   return (
     <section>
-      <Eyebrow subtitle={`Service mix · ${effectiveTenant?.name ?? ""}`}>Service share</Eyebrow>
+      <Eyebrow subtitle={`Request distribution by service · ${effectiveTenant?.name ?? ""}`}>Service consumption</Eyebrow>
       <Card className="p-5">
         <div className="flex items-center gap-5">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
@@ -772,8 +770,8 @@ export function ServiceMix() {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div className="text-[16px] font-bold text-slate-900 leading-tight">{shortName}</div>
-              <div className="text-[10px] text-slate-500 mt-1">services</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>{formatKMB(totalRequests)}</div>
+              <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>requests</div>
             </div>
           </div>
           <div className="flex-1 min-w-0 space-y-1.5">
