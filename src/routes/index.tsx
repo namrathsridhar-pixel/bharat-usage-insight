@@ -68,9 +68,8 @@ function TenantContextBanner() {
 }
 
 function PageInner() {
-  const { effectiveTenant, setSelectedTenantId } = useUsage();
+  const { effectiveTenant, setSelectedTenantId, tab, setTab } = useUsage();
   const isTenantScoped = !!effectiveTenant;
-  const [tab, setTab] = useState<TabKey>("overview");
   const contentRef = useRef<HTMLDivElement>(null);
 
   function handleTenantDrilldown(id: string) {
@@ -95,34 +94,11 @@ function PageInner() {
         </p>
       </div>
 
-      {/* Global filter bar — fixed across all tabs */}
+      {/* Global filter bar — fixed across all tabs (includes segmented tab control) */}
       <FilterBar />
 
       {/* Persistent section — Platform Adoption (or tenant banner when scoped) */}
       {isTenantScoped ? <TenantContextBanner /> : <TenantOverview />}
-
-      {/* Tab bar */}
-      <div className="border-b border-slate-200">
-        <div className="flex items-center gap-1">
-          {TABS.map((t) => {
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`relative px-4 py-2.5 text-sm transition-colors -mb-px border-b-2 ${
-                  active
-                    ? "text-slate-900 font-semibold border-orange-500"
-                    : "text-slate-500 font-medium border-transparent hover:text-slate-700"
-                }`}
-                style={{ color: active ? "#0F172A" : "#475569" }}
-              >
-                {t.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
 
       <LoadingOverlay>
         <div ref={contentRef} className="space-y-6">
