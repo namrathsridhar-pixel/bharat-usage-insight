@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home, Database, LayoutGrid, Users, Key, FileText, Bell, ShieldCheck,
-  BarChart3, Menu, UserCircle2,
+  BarChart3, Menu,
 } from "lucide-react";
+import { useUsage, type Role } from "@/lib/usage/context";
 
 const NAV_TOP = [
   { icon: Home, label: "Home", to: "/home" },
