@@ -4,6 +4,7 @@ import { appendLiveTick } from "@/data/eventLog";
 
 export type TimeWindow = "1h" | "24h" | "7d" | "30d" | "custom";
 export type Role = "platform_admin" | "tenant_admin";
+export type DashboardTab = "overview" | "tenant" | "service";
 
 interface UsageCtx {
   role: Role;
@@ -15,6 +16,8 @@ interface UsageCtx {
   loading: boolean;
   tick: number;
   lastUpdatedAt: number;
+  tab: DashboardTab;
+  setTab: (t: DashboardTab) => void;
 }
 
 const Ctx = createContext<UsageCtx | null>(null);
