@@ -5,7 +5,7 @@ import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
 import {
   PlatformPulse, TenantOverview, ConsumptionOverview, VolumeHealth, ServiceBreakdown,
-  TenantRanking, ServiceMix, ThroughputLoad, CompareTenants, LoadingOverlay,
+  TenantRanking, ServiceMix, ServiceKPIs, ThroughputLoad, CompareTenants, LoadingOverlay,
 } from "@/components/usage/Sections";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -68,10 +68,15 @@ function TenantContextBanner() {
 }
 
 function PageInner() {
-  const { effectiveTenant } = useUsage();
+  const { effectiveTenant, setSelectedTenantId } = useUsage();
   const isTenantScoped = !!effectiveTenant;
   const [tab, setTab] = useState<TabKey>("overview");
   const contentRef = useRef<HTMLDivElement>(null);
+
+  function handleTenantDrilldown(id: string) {
+    setSelectedTenantId(id);
+    setTab("tenant");
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -124,7 +129,7 @@ function PageInner() {
           {tab === "overview" && (
             <>
               <PlatformPulse />
-              {!isTenantScoped && <ConsumptionOverview singleDonut />}
+              {!isTenantScoped && <ConsumptionOverview singleDonut onTenantClick={handleTenantDrilldown} />}
               <VolumeHealth />
             </>
           )}
@@ -139,9 +144,10 @@ function PageInner() {
 
           {tab === "service" && (
             <>
-              {isTenantScoped && <ServiceMix />}
+              <ServiceKPIs />
+              <ServiceMix />
               <ServiceBreakdown />
-              {isTenantScoped && <CompareTenants view="serviceBar" />}
+              <CompareTenants view="serviceBar" />
             </>
           )}
         </div>

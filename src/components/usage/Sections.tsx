@@ -169,7 +169,7 @@ export function TenantOverview() {
 /* =========================================================
    ZONE 2B — Consumption Overview (3 panels)
 ========================================================= */
-export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boolean } = {}) {
+export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { singleDonut?: boolean; onTenantClick?: (id: string) => void } = {}) {
   const { window } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
   const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
@@ -195,8 +195,8 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
-    ...topSlice.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
-    ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+    ...topSlice.map((c) => ({ id: c.id, name: c.name, value: c.requests, pct: c.pct, color: c.color })),
+    ...(rest.length ? [{ id: undefined as string | undefined, name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
   
 
@@ -226,7 +226,7 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className={`grid gap-6 grid-cols-1 ${singleDonut ? "" : "lg:grid-cols-2"} items-start`}>
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
           {/* Left: Usage concentration donut */}
           <div className="relative min-w-0 flex flex-col">
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -248,12 +248,22 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
                       stroke="#fff"
                       strokeWidth={2}
                       isAnimationActive={false}
+                      onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
                     >
-                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      {donut.map((d, i) => (
+                        <Cell
+                          key={i}
+                          fill={d.color}
+                          style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }}
+                        />
+                      ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                      formatter={(v: number, _n, p: any) => [
+                        `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%${p.payload.id && onTenantClick ? " · Click to view" : ""}`,
+                        p.payload.name,
+                      ]}
                       separator="  "
                     />
                   </PieChart>
@@ -283,67 +293,85 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
             </div>
           </div>
 
-          {/* Right: Top Tenants by Throughput — donut */}
-          {!singleDonut && (
-          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
-            <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
-              Top tenants by throughput
-            </div>
-            <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
-            {rpsByTenant.length === 0 ? (
-              <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
-            ) : (
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={rpsByTenant}
-                        dataKey="avgRps"
-                        nameKey="name"
-                        innerRadius={64}
-                        outerRadius={92}
-                        paddingAngle={1}
-                        stroke="#fff"
-                        strokeWidth={2}
-                        isAnimationActive={false}
-                      >
-                        {rpsByTenant.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                        formatter={(v: number, _n, p: any) => [`${v.toFixed(3)} req/s`, p.payload.name]}
-                        separator="  "
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
-                    <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100" style={{ fontSize: 11 }}>
-                    <span className="shrink-0" style={{ width: 8, height: 8 }} aria-hidden />
-                    <span className="flex-1 min-w-0 uppercase tracking-wider font-semibold text-slate-600">Tenant</span>
-                    <span className="text-right shrink-0 uppercase tracking-wider font-semibold text-slate-600" style={{ width: 78 }}>Avg RPS</span>
-                  </div>
-                  {rpsByTenant.map((t) => (
-                    <div
-                      key={t.id}
-                      title={`${t.name} — ${t.avgRps.toFixed(3)} req/s avg`}
-                      className="flex items-start gap-2"
-                      style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
-                    >
-                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
-                      <span className="flex-1 min-w-0 text-slate-900 leading-tight" style={{ wordBreak: "normal", overflowWrap: "break-word" }}>{t.name}</span>
-                      <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
-                    </div>
-                  ))}
-                </div>
+          {/* Right: Top 5 Tenants ranked list (singleDonut) or Top Tenants by Throughput donut */}
+          {singleDonut ? (
+            <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+              <div className="mb-1" style={{ fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                Top 5 tenants
               </div>
-            )}
-          </div>
+              <div className="mb-3" style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8" }}>
+                by request volume · reflects selected time window
+              </div>
+              <div>
+                {topSlice.length === 0 && (
+                  <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
+                )}
+                {topSlice.map((t, i) => {
+                  const pctOfMax = topSlice[0] ? (t.requests / topSlice[0].requests) * 100 : 0;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => onTenantClick?.(t.id)}
+                      className="group w-full flex items-center gap-3 px-2 transition-colors border-l-2 border-transparent hover:border-l-2"
+                      style={{ height: 40, borderBottom: i < topSlice.length - 1 ? "1px solid #F1F5F9" : "none" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "#F8FAFC";
+                        e.currentTarget.style.borderLeftColor = t.color;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.borderLeftColor = "transparent";
+                      }}
+                      title={`View ${t.name}`}
+                    >
+                      <span className="tabular-nums shrink-0 text-left" style={{ fontSize: 11, color: "#94A3B8", width: 22 }}>#{i + 1}</span>
+                      <span className="rounded-full shrink-0" style={{ background: t.color, width: 8, height: 8 }} />
+                      <span className="flex-1 min-w-0 truncate text-left" style={{ fontSize: 12, color: "#0F172A" }}>{t.name}</span>
+                      <span className="tabular-nums shrink-0 text-right" style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 56 }}>{formatKMB(t.requests)}</span>
+                      <span className="shrink-0 rounded-full bg-slate-100 overflow-hidden" style={{ width: 56, height: 4 }}>
+                        <span className="block h-full rounded-full" style={{ width: `${pctOfMax}%`, background: t.color }} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+                Top tenants by throughput
+              </div>
+              <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
+              {rpsByTenant.length === 0 ? (
+                <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
+              ) : (
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={rpsByTenant} dataKey="avgRps" nameKey="name" innerRadius={64} outerRadius={92} paddingAngle={1} stroke="#fff" strokeWidth={2} isAnimationActive={false}>
+                          {rpsByTenant.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, _n, p: any) => [`${v.toFixed(3)} req/s`, p.payload.name]} separator="  " />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
+                      <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    {rpsByTenant.map((t) => (
+                      <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                        <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
+                        <span className="flex-1 min-w-0 text-slate-900 leading-tight">{t.name}</span>
+                        <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </Card>
@@ -455,6 +483,7 @@ export function VolumeHealth() {
 ========================================================= */
 type SortKey = "requests" | "nativeUnits" | "successRate" | "failed";
 export function ServiceBreakdown() {
+  const { effectiveTenant } = useUsage();
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
@@ -490,7 +519,7 @@ export function ServiceBreakdown() {
 
   return (
     <section>
-      <Eyebrow subtitle="Consumption by service type">Service breakdown</Eyebrow>
+      <Eyebrow subtitle={effectiveTenant ? `Service consumption for ${effectiveTenant.name}` : "Consumption across all services · reflects selected time window"}>Service breakdown</Eyebrow>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -756,7 +785,7 @@ export function ServiceMix() {
 
   return (
     <section>
-      <Eyebrow subtitle={`Request distribution by service · ${effectiveTenant?.name ?? ""}`}>Service consumption</Eyebrow>
+      <Eyebrow subtitle={effectiveTenant ? `Request distribution for ${effectiveTenant.name} · reflects selected time window` : "Platform-wide request distribution · reflects selected time window"}>Service consumption</Eyebrow>
       <Card className="p-5">
         <div className="flex items-center gap-5">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
@@ -1043,4 +1072,68 @@ export function LoadingOverlay({ children }: { children: React.ReactNode }) {
     );
   }
   return <>{children}</>;
+}
+
+/* =========================================================
+   Service KPIs — Active / Most Used / Highest Failure Rate
+========================================================= */
+export function ServiceKPIs() {
+  const { windowHours, tenantId } = useScope();
+  const { tick } = useUsage();
+  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+
+  const perService = useMemo(() => {
+    return SERVICES.map((s) => {
+      const r = rows.filter((x) => x.service === s.key);
+      const requests = r.reduce((a, x) => a + x.requests, 0);
+      const failed = r.reduce((a, x) => a + x.failed, 0);
+      const failRate = requests ? (failed / requests) * 100 : 0;
+      return { key: s.key, name: s.name, color: s.color, requests, failed, failRate };
+    });
+  }, [rows]);
+
+  const active = perService.filter((s) => s.requests > 0);
+  const activeCount = active.length;
+  const mostUsed = [...active].sort((a, b) => b.requests - a.requests)[0];
+  const highestFail = [...active].sort((a, b) => b.failRate - a.failRate)[0];
+
+  const failClr = highestFail && highestFail.failRate > 1 ? "#D97706" : "#0F172A";
+
+  return (
+    <section>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+        <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Active services</div>
+          <div className="mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{activeCount}</div>
+          <div className="mt-2" style={{ fontSize: 12, color: "#94A3B8" }}>with requests in selected window</div>
+        </div>
+
+        <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Most used service</div>
+          <div className="mt-2 flex items-center gap-2 leading-none">
+            {mostUsed && <span className="rounded-full shrink-0" style={{ background: mostUsed.color, width: 10, height: 10 }} />}
+            <span className="tabular-nums truncate" style={{ fontSize: 24, fontWeight: 700, color: "#0F172A" }}>
+              {mostUsed ? abbrService(mostUsed.name) : "—"}
+            </span>
+          </div>
+          <div className="mt-2 tabular-nums" style={{ fontSize: 12, color: "#94A3B8" }}>
+            {mostUsed ? `${formatKMB(mostUsed.requests)} requests` : "No activity"}
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Highest failure rate</div>
+          <div className="mt-2 flex items-center gap-2 leading-none">
+            {highestFail && <span className="rounded-full shrink-0" style={{ background: highestFail.color, width: 10, height: 10 }} />}
+            <span className="tabular-nums truncate" style={{ fontSize: 24, fontWeight: 700, color: failClr }}>
+              {highestFail ? abbrService(highestFail.name) : "—"}
+            </span>
+          </div>
+          <div className="mt-2 tabular-nums" style={{ fontSize: 12, color: "#94A3B8" }}>
+            {highestFail ? `${highestFail.failRate.toFixed(2)}% failure rate` : "No activity"}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
