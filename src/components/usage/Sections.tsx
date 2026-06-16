@@ -865,8 +865,8 @@ export function ServiceMix() {
                 <Pie
                   data={segments}
                   dataKey="requests"
-                  innerRadius={62}
-                  outerRadius={96}
+                  innerRadius={74}
+                  outerRadius={116}
                   paddingAngle={1}
                   stroke="#fff"
                   strokeWidth={2}
