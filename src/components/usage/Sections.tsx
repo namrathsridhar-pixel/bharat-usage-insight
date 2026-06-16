@@ -226,6 +226,94 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
+        {singleDonut ? (
+          <div className="relative min-w-0 flex flex-col">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+                Usage concentration
+              </div>
+            </div>
+            <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
+            <div className="grid gap-6 items-center grid-cols-1 lg:grid-cols-3 min-w-0">
+              <div className="relative shrink-0 mx-auto lg:mx-0" style={{ width: 220, height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={donut}
+                      dataKey="value"
+                      innerRadius={64}
+                      outerRadius={92}
+                      paddingAngle={1}
+                      stroke="#fff"
+                      strokeWidth={2}
+                      isAnimationActive={false}
+                      onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
+                    >
+                      {donut.map((d, i) => (
+                        <Cell key={i} fill={d.color} style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      formatter={(v: number, _n, p: any) => [
+                        `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%${p.payload.id && onTenantClick ? " · Click to view" : ""}`,
+                        p.payload.name,
+                      ]}
+                      separator="  "
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-[20px] font-bold text-slate-900 leading-none">Top {donutTopCount}</div>
+                  <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
+                </div>
+              </div>
+              <div className="lg:col-span-2 min-w-0">
+                {donut.map((d, i) => {
+                  const isOthers = d.name.startsWith("Others");
+                  const clickable = !isOthers && !!d.id && !!onTenantClick;
+                  return (
+                    <div
+                      key={d.name}
+                      role={clickable ? "button" : undefined}
+                      tabIndex={clickable ? 0 : undefined}
+                      onClick={() => clickable && onTenantClick?.(d.id!)}
+                      onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onTenantClick?.(d.id!); } }}
+                      title={isOthers ? `${d.name} — ${d.pct.toFixed(2)}%` : `${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
+                      className="flex items-center gap-2 px-2 rounded transition-colors"
+                      style={{ height: 36, cursor: clickable ? "pointer" : "default" }}
+                      onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = "#F8FAFC"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      <span className="tabular-nums shrink-0 text-left" style={{ fontSize: 11, color: "#94A3B8", width: 24 }}>
+                        {isOthers ? "" : `#${i + 1}`}
+                      </span>
+                      <span className="rounded-full shrink-0" style={{ background: isOthers ? "#94A3B8" : d.color, width: 8, height: 8 }} />
+                      <span
+                        className={`flex-1 truncate ${isOthers ? "text-slate-400 italic" : ""}`}
+                        style={{ fontSize: 12, color: isOthers ? undefined : "#0F172A", minWidth: 200 }}
+                      >
+                        {d.name}
+                      </span>
+                      <span
+                        className="tabular-nums shrink-0 text-right"
+                        style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 72 }}
+                      >
+                        {isOthers ? "" : formatKMB(d.value)}
+                      </span>
+                      <span
+                        className="tabular-nums shrink-0 text-right"
+                        style={{ fontSize: 12, fontWeight: 600, color: isOthers ? "#94A3B8" : "#475569", width: 64 }}
+                      >
+                        {d.pct.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
           {/* Left: Usage concentration donut */}
           <div className="relative min-w-0 flex flex-col">
@@ -251,11 +339,7 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                       onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
                     >
                       {donut.map((d, i) => (
-                        <Cell
-                          key={i}
-                          fill={d.color}
-                          style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }}
-                        />
+                        <Cell key={i} fill={d.color} style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -293,87 +377,44 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
             </div>
           </div>
 
-          {/* Right: Top 5 Tenants ranked list (singleDonut) or Top Tenants by Throughput donut */}
-          {singleDonut ? (
-            <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
-              <div className="mb-1" style={{ fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                Top 5 tenants
-              </div>
-              <div className="mb-3" style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8" }}>
-                by request volume · reflects selected time window
-              </div>
-              <div>
-                {topSlice.length === 0 && (
-                  <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
-                )}
-                {topSlice.map((t, i) => {
-                  const pctOfMax = topSlice[0] ? (t.requests / topSlice[0].requests) * 100 : 0;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => onTenantClick?.(t.id)}
-                      className="group w-full flex items-center gap-3 px-2 transition-colors border-l-2 border-transparent hover:border-l-2"
-                      style={{ height: 40, borderBottom: i < topSlice.length - 1 ? "1px solid #F1F5F9" : "none" }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "#F8FAFC";
-                        e.currentTarget.style.borderLeftColor = t.color;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = "transparent";
-                        e.currentTarget.style.borderLeftColor = "transparent";
-                      }}
-                      title={`View ${t.name}`}
-                    >
-                      <span className="tabular-nums shrink-0 text-left" style={{ fontSize: 11, color: "#94A3B8", width: 22 }}>#{i + 1}</span>
-                      <span className="rounded-full shrink-0" style={{ background: t.color, width: 8, height: 8 }} />
-                      <span className="flex-1 min-w-0 truncate text-left" style={{ fontSize: 12, color: "#0F172A" }}>{t.name}</span>
-                      <span className="tabular-nums shrink-0 text-right" style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 56 }}>{formatKMB(t.requests)}</span>
-                      <span className="shrink-0 rounded-full bg-slate-100 overflow-hidden" style={{ width: 56, height: 4 }}>
-                        <span className="block h-full rounded-full" style={{ width: `${pctOfMax}%`, background: t.color }} />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Right: Top Tenants by Throughput donut */}
+          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+            <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+              Top tenants by throughput
             </div>
-          ) : (
-            <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
-              <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
-                Top tenants by throughput
-              </div>
-              <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
-              {rpsByTenant.length === 0 ? (
-                <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
-              ) : (
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={rpsByTenant} dataKey="avgRps" nameKey="name" innerRadius={64} outerRadius={92} paddingAngle={1} stroke="#fff" strokeWidth={2} isAnimationActive={false}>
-                          {rpsByTenant.map((d, i) => <Cell key={i} fill={d.color} />)}
-                        </Pie>
-                        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, _n, p: any) => [`${v.toFixed(3)} req/s`, p.payload.name]} separator="  " />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                      <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
-                      <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    {rpsByTenant.map((t) => (
-                      <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
-                        <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
-                        <span className="flex-1 min-w-0 text-slate-900 leading-tight">{t.name}</span>
-                        <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
-                      </div>
-                    ))}
+            <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
+            {rpsByTenant.length === 0 ? (
+              <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
+            ) : (
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={rpsByTenant} dataKey="avgRps" nameKey="name" innerRadius={64} outerRadius={92} paddingAngle={1} stroke="#fff" strokeWidth={2} isAnimationActive={false}>
+                        {rpsByTenant.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      </Pie>
+                      <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, _n, p: any) => [`${v.toFixed(3)} req/s`, p.payload.name]} separator="  " />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
+                    <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  {rpsByTenant.map((t) => (
+                    <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
+                      <span className="flex-1 min-w-0 text-slate-900 leading-tight">{t.name}</span>
+                      <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+        )}
       </Card>
     </section>
   );
