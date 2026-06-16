@@ -9,7 +9,7 @@ import {
 } from "@/components/usage/Sections";
 import { Toaster } from "@/components/ui/sonner";
 import { TENANTS } from "@/data/eventLog";
-import { Search } from "lucide-react";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
