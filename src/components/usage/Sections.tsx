@@ -234,8 +234,8 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
               </div>
             </div>
             <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
-            <div className="grid gap-6 items-center grid-cols-1 lg:grid-cols-3 min-w-0">
-              <div className="relative shrink-0 mx-auto lg:mx-0" style={{ width: 220, height: 220 }}>
+            <div className="flex flex-col lg:flex-row gap-6 items-center min-w-0">
+              <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -268,48 +268,54 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                   <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                 </div>
               </div>
-              <div className="lg:col-span-2 min-w-0">
-                {donut.map((d, i) => {
-                  const isOthers = d.name.startsWith("Others");
-                  const clickable = !isOthers && !!d.id && !!onTenantClick;
-                  return (
-                    <div
-                      key={d.name}
-                      role={clickable ? "button" : undefined}
-                      tabIndex={clickable ? 0 : undefined}
-                      onClick={() => clickable && onTenantClick?.(d.id!)}
-                      onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onTenantClick?.(d.id!); } }}
-                      title={isOthers ? `${d.name} — ${d.pct.toFixed(2)}%` : `${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
-                      className="flex items-center gap-2 px-2 rounded transition-colors"
-                      style={{ height: 36, cursor: clickable ? "pointer" : "default" }}
-                      onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = "#F8FAFC"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                    >
-                      <span className="tabular-nums shrink-0 text-left" style={{ fontSize: 11, color: "#94A3B8", width: 24 }}>
-                        {isOthers ? "" : `#${i + 1}`}
-                      </span>
-                      <span className="rounded-full shrink-0" style={{ background: isOthers ? "#94A3B8" : d.color, width: 8, height: 8 }} />
-                      <span
-                        className={`flex-1 truncate ${isOthers ? "text-slate-400 italic" : ""}`}
-                        style={{ fontSize: 12, color: isOthers ? undefined : "#0F172A", minWidth: 200 }}
+              <div className="min-w-0 w-full" style={{ maxWidth: 480 }}>
+                {(() => {
+                  const rows = donut.filter(d => !d.name.startsWith("Others")).slice(0, 5);
+                  const maxVal = rows.length ? rows[0].value : 1;
+                  return rows.map((d, i) => {
+                    const clickable = !!d.id && !!onTenantClick;
+                    const barPct = Math.max(2, (d.value / maxVal) * 100);
+                    return (
+                      <div
+                        key={d.name}
+                        role={clickable ? "button" : undefined}
+                        tabIndex={clickable ? 0 : undefined}
+                        onClick={() => clickable && onTenantClick?.(d.id!)}
+                        onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onTenantClick?.(d.id!); } }}
+                        title={`${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
+                        className="flex items-center gap-2 px-2 rounded transition-colors"
+                        style={{ height: 44, cursor: clickable ? "pointer" : "default" }}
+                        onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = "#F8FAFC"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       >
-                        {d.name}
-                      </span>
-                      <span
-                        className="tabular-nums shrink-0 text-right"
-                        style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 72 }}
-                      >
-                        {isOthers ? "" : formatKMB(d.value)}
-                      </span>
-                      <span
-                        className="tabular-nums shrink-0 text-right"
-                        style={{ fontSize: 12, fontWeight: 600, color: isOthers ? "#94A3B8" : "#475569", width: 64 }}
-                      >
-                        {d.pct.toFixed(2)}%
-                      </span>
-                    </div>
-                  );
-                })}
+                        <span className="tabular-nums shrink-0 text-left" style={{ fontSize: 11, color: "#94A3B8", width: 24 }}>
+                          {`#${i + 1}`}
+                        </span>
+                        <span className="shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+                          <span className="rounded-full" style={{ background: d.color, width: 8, height: 8 }} />
+                        </span>
+                        <div className="shrink-0 flex flex-col justify-center" style={{ width: 200 }}>
+                          <span className="truncate" style={{ fontSize: 12, fontWeight: 500, color: "#0F172A", lineHeight: "16px" }}>
+                            {d.name}
+                          </span>
+                          <div className="mt-1 rounded-full" style={{ height: 6, width: `${barPct}%`, background: d.color }} />
+                        </div>
+                        <span
+                          className="tabular-nums shrink-0 text-right"
+                          style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 55 }}
+                        >
+                          {formatKMB(d.value)}
+                        </span>
+                        <span
+                          className="tabular-nums shrink-0 text-right"
+                          style={{ fontSize: 12, fontWeight: 400, color: "#475569", width: 50 }}
+                        >
+                          {d.pct.toFixed(2)}%
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
