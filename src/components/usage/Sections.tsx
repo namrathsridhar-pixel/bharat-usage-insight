@@ -828,7 +828,7 @@ export function ServiceMix() {
               <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>Services</div>
             </div>
           </div>
-          <div style={{ width: 400, maxWidth: "100%" }}>
+          <div className="flex-1 min-w-0">
             {segments.map((s) => (
               <div
                 key={s.key}
@@ -839,7 +839,7 @@ export function ServiceMix() {
                 <span className="rounded-full shrink-0" style={{ background: s.color, width: 8, height: 8 }} />
                 <span
                   className="shrink-0 truncate"
-                  style={{ fontSize: 12, color: "#0F172A", width: 180 }}
+                  style={{ fontSize: 12, color: "#0F172A", minWidth: 180 }}
                 >
                   {s.name}
                 </span>
