@@ -239,7 +239,7 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={donut}
+                      data={donut.filter(d => !d.name.startsWith("Others")).slice(0, 5)}
                       dataKey="value"
                       innerRadius={64}
                       outerRadius={92}
@@ -249,7 +249,7 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                       isAnimationActive={false}
                       onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
                     >
-                      {donut.map((d, i) => (
+                      {donut.filter(d => !d.name.startsWith("Others")).slice(0, 5).map((d, i) => (
                         <Cell key={i} fill={d.color} style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }} />
                       ))}
                     </Pie>
