@@ -169,7 +169,7 @@ export function TenantOverview() {
 /* =========================================================
    ZONE 2B — Consumption Overview (3 panels)
 ========================================================= */
-export function ConsumptionOverview() {
+export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boolean } = {}) {
   const { window } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
   const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
@@ -226,7 +226,7 @@ export function ConsumptionOverview() {
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
+        <div className={`grid gap-6 grid-cols-1 ${singleDonut ? "" : "lg:grid-cols-2"} items-start`}>
           {/* Left: Usage concentration donut */}
           <div className="relative min-w-0 flex flex-col">
             <div className="mb-1 flex items-center justify-between gap-2">
@@ -284,6 +284,7 @@ export function ConsumptionOverview() {
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
+          {!singleDonut && (
           <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
             <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
               Top tenants by throughput
@@ -343,6 +344,7 @@ export function ConsumptionOverview() {
               </div>
             )}
           </div>
+          )}
         </div>
       </Card>
     </section>
