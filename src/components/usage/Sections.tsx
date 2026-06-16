@@ -959,22 +959,29 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                 subtitle="Heatmap of request volume per tenant per service"
                 right={
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-                      {HEAT_TOP_OPTIONS.map((n) => {
-                        const active = heatTopN === n;
-                        return (
-                          <button
-                            key={n}
-                            onClick={() => setHeatTopN(n)}
-                            className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
-                              active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
-                            }`}
-                          >
-                            {`Top ${n}`}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {isTenantScoped && effectiveTenant ? (
+                      <div className="inline-flex items-center gap-1.5" style={{ fontSize: 11, color: "#475569" }}>
+                        <span className="rounded-full" style={{ background: effectiveTenant.avatarColor, width: 8, height: 8, display: "inline-block" }} />
+                        <span>Showing: {effectiveTenant.name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+                        {HEAT_TOP_OPTIONS.map((n) => {
+                          const active = heatTopN === n;
+                          return (
+                            <button
+                              key={n}
+                              onClick={() => setHeatTopN(n)}
+                              className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                                active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                              }`}
+                            >
+                              {`Top ${n}`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
