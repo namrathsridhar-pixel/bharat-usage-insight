@@ -483,6 +483,7 @@ export function VolumeHealth() {
 ========================================================= */
 type SortKey = "requests" | "nativeUnits" | "successRate" | "failed";
 export function ServiceBreakdown() {
+  const { effectiveTenant } = useUsage();
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
