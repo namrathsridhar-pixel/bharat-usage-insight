@@ -418,14 +418,18 @@ export function VolumeHealth() {
         </div>
       </div>
       <Card className="p-5">
-        <div className="flex items-stretch">
-          <div className="w-8 shrink-0 flex items-center justify-center pr-1">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}>
+        {/* Top chart — Requests (60% of total height) */}
+        <div className="flex items-stretch" style={{ height: 200 }}>
+          <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
+            <span
+              className="uppercase tracking-[0.14em] font-semibold whitespace-nowrap"
+              style={{ fontSize: 10, writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}
+            >
               Requests
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartWithFailRate} margin={{ top: 10, right: 12, left: 0, bottom: 0 }} syncId="vh">
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
@@ -441,14 +445,18 @@ export function VolumeHealth() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="flex items-stretch -mt-1">
-          <div className="w-8 shrink-0 flex items-center justify-center pr-1">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}>
+        {/* Bottom chart — Failure rate % (40% of total height) */}
+        <div className="flex items-stretch -mt-1" style={{ height: 134 }}>
+          <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
+            <span
+              className="uppercase tracking-[0.14em] font-semibold whitespace-nowrap"
+              style={{ fontSize: 10, writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}
+            >
               Failure rate %
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <ResponsiveContainer width="100%" height={120}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartWithFailRate} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} syncId="vh">
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
@@ -568,7 +576,7 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId } = useUsage();
+  const { tick, setSelectedTenantId, effectiveTenant } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
@@ -576,6 +584,7 @@ export function TenantRanking() {
   const TOP_OPTIONS = [5, 10, 25] as const;
   type TopN = typeof TOP_OPTIONS[number];
   const [topN, setTopN] = useState<TopN>(10);
+  const isScoped = !!effectiveTenant;
 
   function handleClick(id: string) {
     setSelectedTenantId(id);
@@ -583,9 +592,12 @@ export function TenantRanking() {
   }
 
   const activeRanked = ranked.filter((r) => !r.inactive);
-  const limit = Math.min(topN, activeRanked.length);
-  const visible = activeRanked.slice(0, limit);
-  const isExpanded = topN > 10;
+  const limit = isScoped ? activeRanked.length : Math.min(topN, activeRanked.length);
+  const visibleAll = isScoped
+    ? activeRanked.filter((r) => r.tenant.id === tenantId)
+    : activeRanked.slice(0, limit);
+  const visible = visibleAll;
+  const isExpanded = !isScoped && topN > 10;
 
   // K/M/B for compact (≤10), Indian K/L/Cr for detail
   const fmt = isExpanded ? formatLakhCr : formatKMB;
@@ -593,29 +605,36 @@ export function TenantRanking() {
   const rankIndex = new Map<string, number>();
   activeRanked.forEach((r, i) => rankIndex.set(r.tenant.id, i + 1));
 
-  const subtitle = `Top ${limit} by request volume`;
+  const subtitle = isScoped ? undefined : `Top ${limit} by request volume`;
 
   return (
     <section>
       <Eyebrow
         subtitle={subtitle}
         right={
-          <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-            {TOP_OPTIONS.map((n) => {
-              const active = topN === n;
-              return (
-                <button
-                  key={n}
-                  onClick={() => setTopN(n)}
-                  className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
-                    active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  {`Top ${n}`}
-                </button>
-              );
-            })}
-          </div>
+          isScoped && effectiveTenant ? (
+            <div className="inline-flex items-center gap-1.5" style={{ fontSize: 11, color: "#475569" }}>
+              <span className="rounded-full" style={{ background: effectiveTenant.avatarColor, width: 8, height: 8, display: "inline-block" }} />
+              <span>Showing: {effectiveTenant.name}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+              {TOP_OPTIONS.map((n) => {
+                const active = topN === n;
+                return (
+                  <button
+                    key={n}
+                    onClick={() => setTopN(n)}
+                    className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                      active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {`Top ${n}`}
+                  </button>
+                );
+              })}
+            </div>
+          )
         }
       >
         Tenant ranking
@@ -681,12 +700,6 @@ export function TenantRanking() {
                         {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
-                    {!r.inactive && (
-                      <div className="mt-1 flex items-center justify-between text-[10px] tabular-nums text-slate-500">
-                        <span>Avg RPS <span className="text-slate-700 font-medium">{r.avgRps.toFixed(3)}</span></span>
-                        <span>Peak RPS <span className="text-slate-700 font-medium">{Math.max(r.peakRps, r.avgRps).toFixed(3)}</span></span>
-                      </div>
-                    )}
                     {r.inactive && (
                       <div className="mt-1 text-[10px] text-slate-400 italic">No activity this period</div>
                     )}
@@ -815,12 +828,33 @@ export function ServiceMix() {
               <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>Services</div>
             </div>
           </div>
-          <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex-1 min-w-0">
             {segments.map((s) => (
-              <div key={s.key} className="flex items-center gap-2 text-[11px]">
-                <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-                <span className="flex-1 text-slate-700 truncate">{s.name}</span>
-                <span className="tabular-nums text-slate-500">{s.pct.toFixed(2)}%</span>
+              <div
+                key={s.key}
+                className="flex items-center gap-2"
+                style={{ height: 28 }}
+                title={`${s.name} — ${s.pct.toFixed(2)}%`}
+              >
+                <span className="rounded-full shrink-0" style={{ background: s.color, width: 8, height: 8 }} />
+                <span
+                  className="shrink-0 truncate"
+                  style={{ fontSize: 12, color: "#0F172A", minWidth: 180 }}
+                >
+                  {s.name}
+                </span>
+                <span
+                  className="flex-1"
+                  style={{
+                    borderBottom: "1px dotted #CBD5E1",
+                    margin: "0 6px",
+                    minWidth: 16,
+                    transform: "translateY(-3px)",
+                  }}
+                />
+                <span className="tabular-nums shrink-0 text-right" style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", minWidth: 52 }}>
+                  {s.pct.toFixed(2)}%
+                </span>
               </div>
             ))}
           </div>
@@ -925,22 +959,29 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                 subtitle="Heatmap of request volume per tenant per service"
                 right={
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-                      {HEAT_TOP_OPTIONS.map((n) => {
-                        const active = heatTopN === n;
-                        return (
-                          <button
-                            key={n}
-                            onClick={() => setHeatTopN(n)}
-                            className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
-                              active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
-                            }`}
-                          >
-                            {`Top ${n}`}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {isTenantScoped && effectiveTenant ? (
+                      <div className="inline-flex items-center gap-1.5" style={{ fontSize: 11, color: "#475569" }}>
+                        <span className="rounded-full" style={{ background: effectiveTenant.avatarColor, width: 8, height: 8, display: "inline-block" }} />
+                        <span>Showing: {effectiveTenant.name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
+                        {HEAT_TOP_OPTIONS.map((n) => {
+                          const active = heatTopN === n;
+                          return (
+                            <button
+                              key={n}
+                              onClick={() => setHeatTopN(n)}
+                              className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
+                                active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
+                              }`}
+                            >
+                              {`Top ${n}`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">

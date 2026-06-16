@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home, Database, LayoutGrid, Users, Key, FileText, Bell, ShieldCheck,
-  BarChart3, Menu, UserCircle2,
+  BarChart3, Menu,
 } from "lucide-react";
+import { useUsage, type Role } from "@/lib/usage/context";
 
 const NAV_TOP = [
   { icon: Home, label: "Home", to: "/home" },
@@ -16,6 +17,46 @@ const NAV_TOP = [
   { icon: Bell, label: "Alerts Management", to: "/alerts" },
   { icon: ShieldCheck, label: "PII Guardrail", to: "/pii" },
 ];
+
+const ROLE_SEGMENTS: { key: Role; label: string }[] = [
+  { key: "platform_admin", label: "Adopter Admin" },
+  { key: "tenant_admin", label: "Tenant Admin" },
+];
+
+function RoleSwitcher() {
+  const { role, setRole } = useUsage();
+  return (
+    <div
+      className="inline-flex items-center"
+      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6, padding: 3 }}
+    >
+      {ROLE_SEGMENTS.map((s) => {
+        const active = role === s.key;
+        return (
+          <button
+            key={s.key}
+            onClick={() => setRole(s.key)}
+            className="transition-all duration-150 ease-out"
+            style={{
+              padding: "5px 12px",
+              borderRadius: 4,
+              background: active ? "#FFFFFF" : "transparent",
+              color: active ? "#0F172A" : "#475569",
+              fontSize: 12,
+              fontWeight: active ? 600 : 500,
+              boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {s.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -59,6 +100,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-end gap-3 px-6">
+          <RoleSwitcher />
           <div className="px-3 py-1.5 rounded border border-slate-200 text-xs font-semibold tracking-wider text-slate-700">
             DEFAULT ADMIN
           </div>
