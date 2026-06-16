@@ -90,18 +90,19 @@ export function useUsage() {
   return v;
 }
 
-export function useUpdatedAgo(): string {
+export function useUpdatedAgo(): { text: string; stale: boolean } {
   const { lastUpdatedAt } = useUsage();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
   const diff = Math.max(0, Math.floor((now - lastUpdatedAt) / 1000));
+  if (diff <= 30) return { text: "just now", stale: false };
+  if (diff <= 60) return { text: `${diff} sec ago`, stale: false };
   const m = Math.floor(diff / 60);
-  if (m < 1) return "just now";
-  if (m === 1) return "1 min ago";
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  return h === 1 ? "1 hour ago" : `${h} hours ago`;
+  const base = m < 60
+    ? `${m} min ago`
+    : (() => { const h = Math.floor(m / 60); return h === 1 ? "1 hour ago" : `${h} hours ago`; })();
+  return { text: `${base} · data may be stale`, stale: true };
 }
