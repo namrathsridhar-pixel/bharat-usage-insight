@@ -107,12 +107,13 @@ export function PlatformPulse() {
         <div
           key={i}
           title={`${it.label}: ${it.value}`}
-          className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default flex flex-col"
+          className="rounded-xl bg-white p-5 transition cursor-default flex flex-col"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
         >
-          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">{it.label}</div>
-          <div key={tick} className="pulse-fade mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-          <div className="mt-2"><Delta pct={it.delta} /></div>
-          <div className="mt-1 text-[11px] text-slate-400">{it.sub}</div>
+          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>{it.label}</div>
+          <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{it.value}</div>
+          <div className="mt-2" style={{ fontSize: 12 }}><Delta pct={it.delta} /></div>
+          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
         </div>
       ))}
     </div>
