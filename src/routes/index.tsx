@@ -63,13 +63,26 @@ function TenantContextBanner() {
 
 /** Inline prompt shown in Tenant Admin mode when no tenant is selected. */
 function TenantSelectPrompt() {
-  const { setSelectedTenantId, setRole } = useUsage();
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const filtered = useMemo(
-    () => TENANTS.filter((t) => t.name.toLowerCase().includes(search.toLowerCase())),
-    [search]
-  );
+  const { setSelectedTenantId } = useUsage();
+  const [open, setOpen] = useState(false);
+
+  const PLAN_STYLE: Record<string, string> = {
+    Enterprise: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    Pro: "bg-blue-50 text-blue-700 border-blue-200",
+    Standard: "bg-slate-100 text-slate-700 border-slate-200",
+    Starter: "bg-amber-50 text-amber-700 border-amber-200",
+  };
+
+  // close on outside click
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
   return (
     <div
@@ -79,50 +92,41 @@ function TenantSelectPrompt() {
       <span style={{ fontSize: 13, color: "#0F172A", fontWeight: 500 }}>
         Select a tenant to preview Tenant Admin view
       </span>
-      <div className="relative flex-1 min-w-[240px] max-w-[360px]">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search tenants..."
-          className="w-full pl-8 pr-2 py-1.5 text-sm rounded border border-slate-200 bg-white focus:outline-none focus:border-orange-400"
-        />
-        {search && (
-          <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-md">
-            {filtered.length === 0 && (
-              <div className="px-3 py-2 text-xs text-slate-400">No matches</div>
-            )}
-            {filtered.map((t) => (
+      <div ref={ref} className="relative">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border bg-white text-slate-400 border-slate-200 hover:bg-slate-50 transition min-w-[220px] justify-between"
+        >
+          <span>Select a tenant</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-70">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {open && (
+          <div
+            className="absolute z-20 mt-1 w-[280px] rounded-md border border-slate-200 bg-white shadow-md overflow-y-auto"
+            style={{ maxHeight: 8 * 44 }}
+          >
+            {TENANTS.map((t) => (
               <button
                 key={t.id}
-                onClick={() => { setPendingId(t.id); setSearch(t.name); }}
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-left"
+                onClick={() => { setSelectedTenantId(t.id); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#F8FAFC]"
+                style={{ minHeight: 44 }}
               >
                 <span
-                  className="h-5 w-5 rounded-full inline-flex items-center justify-center text-[9px] font-semibold text-white shrink-0"
+                  className="h-6 w-6 rounded-full inline-flex items-center justify-center text-[10px] font-semibold text-white shrink-0"
                   style={{ background: t.avatarColor }}
                 >
                   {t.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
                 </span>
-                <span className="text-sm text-slate-800 truncate">{t.name}</span>
+                <span className="flex-1 text-sm text-slate-800 truncate">{t.name}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan] ?? PLAN_STYLE.Standard}`}>{t.plan}</span>
               </button>
             ))}
           </div>
         )}
       </div>
-      <button
-        onClick={() => pendingId && setSelectedTenantId(pendingId)}
-        disabled={!pendingId}
-        className="px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-      >
-        View as Tenant Admin
-      </button>
-      <button
-        onClick={() => setRole("platform_admin")}
-        className="text-xs text-slate-500 hover:text-slate-700 hover:underline"
-      >
-        Cancel
-      </button>
     </div>
   );
 }
