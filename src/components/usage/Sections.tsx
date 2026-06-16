@@ -959,8 +959,9 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                   <tbody>
                     {[...TENANTS]
                       .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
+                      .filter((t) => (isTenantScoped ? t.id === tenantId : true))
                       .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
-                      .slice(0, heatTopN)
+                      .slice(0, isTenantScoped ? 1 : heatTopN)
                       .map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
                       return (
