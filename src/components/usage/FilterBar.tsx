@@ -111,11 +111,50 @@ function TenantDropdown() {
   );
 }
 
+const TAB_SEGMENTS: { key: "overview" | "tenant" | "service"; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "tenant", label: "Tenant Consumption" },
+  { key: "service", label: "Service Consumption" },
+];
+
+function SegmentedTabs() {
+  const { tab, setTab } = useUsage();
+  return (
+    <div
+      className="inline-flex items-center p-0.5"
+      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 4 }}
+    >
+      {TAB_SEGMENTS.map((s) => {
+        const active = tab === s.key;
+        return (
+          <button
+            key={s.key}
+            onClick={() => setTab(s.key)}
+            className="transition-all duration-150 ease-out"
+            style={{
+              padding: "8px 16px",
+              borderRadius: 4,
+              background: active ? "#FFFFFF" : "transparent",
+              color: active ? "#0F172A" : "#475569",
+              fontSize: 13,
+              fontWeight: active ? 600 : 400,
+              boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {s.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function FilterBar() {
-  const { window, setWindow, effectiveTenant, setSelectedTenantId, lastUpdatedAt } = useUsage();
+  const { window, setWindow, effectiveTenant, setSelectedTenantId } = useUsage();
   const ago = useUpdatedAgo();
-  const minutesAgo = Math.floor(Math.max(0, Date.now() - lastUpdatedAt) / 60000);
-  const stale = minutesAgo > 5;
 
   return (
     <div className="space-y-2">
@@ -143,17 +182,12 @@ export function FilterBar() {
 
         <TenantDropdown />
 
-        <div className={`inline-flex items-center gap-2 text-[12px] ${stale ? "text-amber-700" : "text-slate-600"}`}>
-          <span className="relative inline-flex h-2 w-2">
-            <span className={`absolute inset-0 rounded-full ${stale ? "bg-amber-500" : "bg-emerald-500 live-dot"}`} />
-          </span>
-          <span>
-            Last refreshed: {ago}
-            {stale && " · data may be stale"}
-          </span>
-        </div>
+        <SegmentedTabs />
       </div>
 
+      <div className="flex justify-end" style={{ fontSize: 11, fontStyle: "italic", color: "#94A3B8" }}>
+        Last refreshed: {ago}
+      </div>
 
       {effectiveTenant && (
         <div className="flex">
