@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { UsageProvider, useUsage } from "@/lib/usage/context";
 import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
@@ -29,9 +30,27 @@ function UsagePage() {
   );
 }
 
+type TabKey = "glance" | "tenant" | "service";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "glance", label: "At a Glance" },
+  { key: "tenant", label: "By Tenant" },
+  { key: "service", label: "By Service" },
+];
+
 function PageInner() {
   const { effectiveTenant } = useUsage();
   const isTenantScoped = !!effectiveTenant;
+  const [tab, setTab] = useState<TabKey>("glance");
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Reset scroll on tab change
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [tab]);
+
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
       <div>
@@ -43,38 +62,57 @@ function PageInner() {
         </p>
       </div>
 
-      {/* 1. Tenant Overview — hidden when a specific tenant is selected */}
-      {!isTenantScoped && <TenantOverview />}
-
-      {/* 2. Time window filter bar */}
+      {/* Global filter bar — fixed across all tabs */}
       <FilterBar />
 
+      {/* Tab bar */}
+      <div className="border-b border-slate-200">
+        <div className="flex items-center gap-1">
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`relative px-4 py-2.5 text-sm transition-colors -mb-px border-b-2 ${
+                  active
+                    ? "text-slate-900 font-bold border-orange-500"
+                    : "text-slate-500 font-medium border-transparent hover:text-slate-700"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <LoadingOverlay>
-        <div className="space-y-6">
-          {/* 3. Top KPI cards */}
-          <PlatformPulse />
-          {/* 4. Consumption overview (3 panels) */}
-          {!isTenantScoped && <ConsumptionOverview />}
-          {/* 5. Request volume & health */}
-          <VolumeHealth />
-          {/* 6. Throughput & load */}
-          <ThroughputLoad />
-          {/* 7. Service breakdown (+ tenant ranking / service mix side panel) */}
-          {isTenantScoped ? (
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-              <div className="lg:col-span-3"><ServiceBreakdown /></div>
-              <div className="lg:col-span-2"><ServiceMix /></div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-              <div className="lg:col-span-3"><ServiceBreakdown /></div>
-              <div className="lg:col-span-2"><TenantRanking /></div>
-            </div>
+        <div ref={contentRef} className="space-y-6">
+          {tab === "glance" && (
+            <>
+              <PlatformPulse />
+              {!isTenantScoped && <TenantOverview />}
+              {!isTenantScoped && <ConsumptionOverview singleDonut />}
+              <VolumeHealth />
+            </>
           )}
-          {/* 8. Usage by tenant & service heatmap — platform-wide only */}
-          {!isTenantScoped && <CompareTenants />}
 
+          {tab === "tenant" && (
+            <>
+              <TenantRanking />
+              <ThroughputLoad />
+              {!isTenantScoped && <CompareTenants />}
+              {isTenantScoped && <CompareTenants />}
+            </>
+          )}
 
+          {tab === "service" && (
+            <>
+              <ServiceBreakdown />
+              {isTenantScoped && <ServiceMix />}
+            </>
+          )}
         </div>
       </LoadingOverlay>
 
