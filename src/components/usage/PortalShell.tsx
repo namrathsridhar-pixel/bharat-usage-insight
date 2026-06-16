@@ -18,6 +18,46 @@ const NAV_TOP = [
   { icon: ShieldCheck, label: "PII Guardrail", to: "/pii" },
 ];
 
+const ROLE_SEGMENTS: { key: Role; label: string }[] = [
+  { key: "platform_admin", label: "Adopter Admin" },
+  { key: "tenant_admin", label: "Tenant Admin" },
+];
+
+function RoleSwitcher() {
+  const { role, setRole } = useUsage();
+  return (
+    <div
+      className="inline-flex items-center"
+      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6, padding: 3 }}
+    >
+      {ROLE_SEGMENTS.map((s) => {
+        const active = role === s.key;
+        return (
+          <button
+            key={s.key}
+            onClick={() => setRole(s.key)}
+            className="transition-all duration-150 ease-out"
+            style={{
+              padding: "5px 12px",
+              borderRadius: 4,
+              background: active ? "#FFFFFF" : "transparent",
+              color: active ? "#0F172A" : "#475569",
+              fontSize: 12,
+              fontWeight: active ? 600 : 500,
+              boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {s.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PortalShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
