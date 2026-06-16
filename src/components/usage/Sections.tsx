@@ -169,7 +169,7 @@ export function TenantOverview() {
 /* =========================================================
    ZONE 2B — Consumption Overview (3 panels)
 ========================================================= */
-export function ConsumptionOverview() {
+export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boolean } = {}) {
   const { window } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
   const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
