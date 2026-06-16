@@ -68,10 +68,15 @@ function TenantContextBanner() {
 }
 
 function PageInner() {
-  const { effectiveTenant } = useUsage();
+  const { effectiveTenant, setSelectedTenantId } = useUsage();
   const isTenantScoped = !!effectiveTenant;
   const [tab, setTab] = useState<TabKey>("overview");
   const contentRef = useRef<HTMLDivElement>(null);
+
+  function handleTenantDrilldown(id: string) {
+    setSelectedTenantId(id);
+    setTab("tenant");
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined") {
