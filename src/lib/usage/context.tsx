@@ -62,7 +62,7 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
   }, [role, selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{ role, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt }}>
+    <Ctx.Provider value={{ role, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab }}>
       {children}
     </Ctx.Provider>
   );
