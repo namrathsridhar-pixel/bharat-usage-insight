@@ -347,12 +347,10 @@ export function VolumeHealth() {
   const { tick } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const totals = useMemo(() => getTotals(rows), [rows]);
-  const prev = useMemo(() => getPrevTotals(windowHours, tenantId), [windowHours, tenantId]);
   const chart = useMemo(() => getChartData(rows, windowHours), [rows, windowHours]);
 
   const successRate = totals.successRate * 100;
   const failureRate = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
-  const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
 
   const chartWithFailRate = useMemo(
     () => chart.map((p) => ({ ...p, failRate: p.total ? +((p.failed / p.total) * 100).toFixed(2) : 0 })),
