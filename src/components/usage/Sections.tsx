@@ -854,19 +854,19 @@ export function ServiceMix() {
   }, [rows, totalRequests]);
 
   return (
-    <section className="h-full flex flex-col">
+    <section>
       <Eyebrow subtitle={effectiveTenant ? `Request distribution for ${effectiveTenant.name} · reflects selected time window` : "Platform-wide request distribution · reflects selected time window"}>Service consumption</Eyebrow>
-      <Card className="p-5 flex-1 flex items-center">
+      <Card className="p-5">
         <div className="flex items-center gap-5 w-full">
-          <div className="relative shrink-0" style={{ width: 240, height: 240 }}>
-            <ResponsiveContainer width={240} height={240}>
+          <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
+            <ResponsiveContainer width={200} height={200}>
 
               <PieChart>
                 <Pie
                   data={segments}
                   dataKey="requests"
-                  innerRadius={74}
-                  outerRadius={116}
+                  innerRadius={62}
+                  outerRadius={96}
                   paddingAngle={1}
                   stroke="#fff"
                   strokeWidth={2}

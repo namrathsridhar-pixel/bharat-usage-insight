@@ -177,18 +177,16 @@ function PageInner() {
             {/* Section 1 — Consumption Summary (4 KPI cards) */}
             <PlatformPulse />
 
-            {/* Section 2 — Consumption Overview (Volume left, Service mix right) */}
-            <section>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-                <div><VolumeHealth /></div>
-                <div><ServiceMix /></div>
-              </div>
-            </section>
+            {/* Section 2 — Request volume & health (full width) */}
+            <VolumeHealth />
 
-            {/* Section 3 — Service breakdown */}
+            {/* Section 3 — Service consumption (donut + legend) */}
+            <ServiceMix />
+
+            {/* Section 4 — Service breakdown */}
             <ServiceBreakdown />
 
-            {/* Section 4 — Throughput */}
+            {/* Section 5 — Throughput */}
             <ThroughputLoad />
           </div>
         </LoadingOverlay>
