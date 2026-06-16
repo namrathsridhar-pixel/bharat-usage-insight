@@ -212,9 +212,11 @@ function PageInner() {
         </p>
       </div>
 
+      <TenantOverview />
+
       <FilterBar />
 
-      {isTenantScoped ? <TenantContextBanner /> : <TenantOverview />}
+      {isTenantScoped && <TenantContextBanner />}
 
       <LoadingOverlay>
         <div ref={contentRef} className="space-y-6">
