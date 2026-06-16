@@ -272,51 +272,69 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                 {(() => {
                   const rows = donut.filter(d => !d.name.startsWith("Others")).slice(0, 5);
                   const maxVal = rows.length ? rows[0].value : 1;
-                  return rows.map((d, i) => {
-                    const clickable = !!d.id && !!onTenantClick;
-                    const barPct = Math.max(2, (d.value / maxVal) * 100);
-                    return (
-                      <div
-                        key={d.name}
-                        role={clickable ? "button" : undefined}
-                        tabIndex={clickable ? 0 : undefined}
-                        onClick={() => clickable && onTenantClick?.(d.id!)}
-                        onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onTenantClick?.(d.id!); } }}
-                        title={`${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
-                        className="flex items-center gap-2 px-2 rounded transition-colors"
-                        style={{ height: 44, cursor: clickable ? "pointer" : "default" }}
-                        onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = "#F8FAFC"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                      >
-                        <span className="tabular-nums shrink-0 text-left" style={{ fontSize: 11, color: "#94A3B8", width: 24 }}>
-                          {`#${i + 1}`}
-                        </span>
-                        <span className="shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-                          <span className="rounded-full" style={{ background: d.color, width: 8, height: 8 }} />
-                        </span>
-                        <div className="shrink-0 flex flex-col justify-center" style={{ width: 200 }}>
-                          <span className="truncate" style={{ fontSize: 12, fontWeight: 500, color: "#0F172A", lineHeight: "16px" }}>
-                            {d.name}
-                          </span>
-                          <div className="mt-1 rounded-full" style={{ height: 6, width: `${barPct}%`, background: d.color }} />
+                  return (
+                    <>
+                      {/* Column headers */}
+                      <div className="flex items-center gap-3 px-2 pb-2">
+                        <div className="shrink-0" style={{ width: 260 }} />
+                        <div
+                          className="flex-1 uppercase tracking-[0.12em] text-center"
+                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8" }}
+                        >
+                          Request share
                         </div>
-                        <span
-                          className="tabular-nums shrink-0 text-right"
-                          style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 55 }}
+                        <div
+                          className="shrink-0 uppercase tracking-[0.12em] text-right"
+                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8", width: 60 }}
                         >
-                          {formatKMB(d.value)}
-                        </span>
-                        <span
-                          className="tabular-nums shrink-0 text-right"
-                          style={{ fontSize: 12, fontWeight: 400, color: "#475569", width: 50 }}
-                        >
-                          {d.pct.toFixed(2)}%
-                        </span>
+                          % of total
+                        </div>
                       </div>
-                    );
-                  });
+                      {rows.map((d, i) => {
+                        const clickable = !!d.id && !!onTenantClick;
+                        const barPct = Math.max(2, (d.value / maxVal) * 100);
+                        const isLast = i === rows.length - 1;
+                        return (
+                          <div
+                            key={d.name}
+                            role={clickable ? "button" : undefined}
+                            tabIndex={clickable ? 0 : undefined}
+                            onClick={() => clickable && onTenantClick?.(d.id!)}
+                            onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onTenantClick?.(d.id!); } }}
+                            title={`${d.name} — ${d.pct.toFixed(2)}%`}
+                            className="flex items-center gap-3 px-2 rounded transition-colors"
+                            style={{ height: 48, cursor: clickable ? "pointer" : "default", borderBottom: isLast ? "none" : "1px solid #F5F7FA" }}
+                            onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = "#F8FAFC"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                          >
+                            <div className="shrink-0 flex items-center gap-2" style={{ width: 260 }}>
+                              <span className="tabular-nums text-left" style={{ fontSize: 11, color: "#94A3B8", width: 24 }}>
+                                {`#${i + 1}`}
+                              </span>
+                              <span className="shrink-0 flex items-center justify-center" style={{ width: 20 }}>
+                                <span className="rounded-full" style={{ background: d.color, width: 8, height: 8 }} />
+                              </span>
+                              <span className="truncate" style={{ fontSize: 12, fontWeight: 500, color: "#0F172A" }}>
+                                {d.name}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="rounded-full" style={{ height: 6, width: `${barPct}%`, background: d.color }} />
+                            </div>
+                            <span
+                              className="tabular-nums shrink-0 text-right"
+                              style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", width: 60 }}
+                            >
+                              {d.pct.toFixed(2)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  );
                 })()}
               </div>
+
             </div>
           </div>
         ) : (
