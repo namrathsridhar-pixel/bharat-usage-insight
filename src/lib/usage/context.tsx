@@ -104,5 +104,5 @@ export function useUpdatedAgo(): { text: string; stale: boolean } {
   const base = m < 60
     ? `${m} min ago`
     : (() => { const h = Math.floor(m / 60); return h === 1 ? "1 hour ago" : `${h} hours ago`; })();
-  return { text: `${base} · data may be stale`, stale: true };
+  return { text: base, stale: true };
 }
