@@ -279,9 +279,9 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                         <div className="shrink-0" style={{ width: 260 }} />
                         <div
                           className="flex-1 uppercase tracking-[0.12em] text-center"
-                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8" }}
+                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8", paddingRight: 48 }}
                         >
-                          Request share
+                          Request volume &amp; share
                         </div>
                         <div
                           className="shrink-0 uppercase tracking-[0.12em] text-right"
@@ -318,8 +318,30 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                                 {d.name}
                               </span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="rounded-full" style={{ height: 6, width: `${barPct}%`, background: d.color }} />
+                            <div className="flex-1 min-w-0" style={{ paddingRight: 48 }}>
+                              <div className="relative rounded-full" style={{ height: 6, width: `${barPct}%`, background: d.color }}>
+                                <div
+                                  className="absolute top-1/2 flex items-center gap-1 pointer-events-none"
+                                  style={{ right: 0, transform: "translate(calc(100% + 6px), -50%)" }}
+                                >
+                                  <span
+                                    className="tabular-nums rounded bg-white flex items-center"
+                                    style={{
+                                      fontSize: 10,
+                                      fontWeight: 700,
+                                      color: d.color,
+                                      border: `1px solid ${d.color}40`,
+                                      padding: "1px 6px",
+                                      boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+                                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                                      lineHeight: "14px",
+                                    }}
+                                  >
+                                    {formatKMB(d.value)}
+                                  </span>
+                                  <span className="rounded-full" style={{ background: d.color, width: 4, height: 4 }} />
+                                </div>
+                              </div>
                             </div>
                             <span
                               className="tabular-nums shrink-0 text-right"
