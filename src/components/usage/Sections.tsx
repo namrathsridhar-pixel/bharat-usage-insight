@@ -279,9 +279,9 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                         <div className="shrink-0" style={{ width: 260 }} />
                         <div
                           className="flex-1 uppercase tracking-[0.12em] text-center"
-                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8" }}
+                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8", paddingRight: 48 }}
                         >
-                          Request share
+                          Request volume &amp; share
                         </div>
                         <div
                           className="shrink-0 uppercase tracking-[0.12em] text-right"
