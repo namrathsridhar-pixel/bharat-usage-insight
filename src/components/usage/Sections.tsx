@@ -804,12 +804,20 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
       </div>
       <Card className="p-5">
         <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
+          <LineChart data={points} margin={{ top: 5, right: 60, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => Number(v).toFixed(3)} />
+            <YAxis
+              tick={{ fontSize: 11, fill: "#64748B" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => Number(v).toFixed(3)}
+              domain={[0, (max: number) => Math.max(max, Math.max(peakRps, avgRps)) * 1.05]}
+            />
             <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${Number(v).toFixed(3)} req/s`, n]} separator="  " />
             <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
+            <ReferenceLine y={avgRps} stroke="#0EA5E9" strokeDasharray="3 3" label={{ value: `Avg ${Number(avgRps).toFixed(3)}`, position: "right", fill: "#0EA5E9", fontSize: 10 }} />
+            <ReferenceLine y={Math.max(peakRps, avgRps)} stroke="#EF4444" strokeDasharray="3 3" label={{ value: `Peak ${Math.max(peakRps, avgRps).toFixed(3)}`, position: "right", fill: "#EF4444", fontSize: 10 }} />
             <Line
               type="monotone"
               dataKey={isDaily ? "peakRps" : "platformRps"}
