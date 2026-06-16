@@ -465,7 +465,8 @@ export function VolumeHealth() {
           <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#D97706" }}>{failureRate.toFixed(2)}% failure rate</div>
         </div>
       </div>
-      <Card className="p-5">
+      <Card className="p-5 flex-1">
+
         {/* Top chart — Requests (60% of total height) */}
         <div className="flex items-stretch" style={{ height: 200 }}>
           <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
