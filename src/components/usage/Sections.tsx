@@ -726,7 +726,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}
-              name={isTenantScoped ? effectiveTenant!.name : (isDaily ? "Peak RPS" : "Platform total")}
+              name={isTenantScoped ? effectiveTenant!.name : "Platform total"}
             />
           </LineChart>
         </ResponsiveContainer>
