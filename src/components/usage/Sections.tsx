@@ -5,7 +5,7 @@ import {
   ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
 } from "recharts";
 import {
-  ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight,
+  ArrowDown, ArrowUp, ArrowUpDown, ChevronDown,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
