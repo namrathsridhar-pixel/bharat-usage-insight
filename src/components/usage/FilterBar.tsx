@@ -198,8 +198,13 @@ export function FilterBar() {
         </div>
       </div>
 
-      <div className="flex justify-end" style={{ fontSize: 11, fontStyle: "italic", color: "#94A3B8" }}>
-        Last refreshed: {ago}
+      <div className="flex justify-end items-center gap-1.5" style={{ fontSize: 11, fontStyle: "italic", color: "#94A3B8" }}>
+        <span
+          className="inline-block rounded-full"
+          style={{ width: 6, height: 6, background: ago.stale ? "#F59E0B" : "#10B981" }}
+          aria-hidden
+        />
+        <span>Last refreshed: {ago.text}</span>
       </div>
 
       {!isTenantAdmin && effectiveTenant && (
