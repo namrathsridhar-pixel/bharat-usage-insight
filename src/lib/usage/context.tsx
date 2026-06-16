@@ -4,6 +4,7 @@ import { appendLiveTick } from "@/data/eventLog";
 
 export type TimeWindow = "1h" | "24h" | "7d" | "30d" | "custom";
 export type Role = "platform_admin" | "tenant_admin";
+export type DashboardTab = "overview" | "tenant" | "service";
 
 interface UsageCtx {
   role: Role;
@@ -15,6 +16,8 @@ interface UsageCtx {
   loading: boolean;
   tick: number;
   lastUpdatedAt: number;
+  tab: DashboardTab;
+  setTab: (t: DashboardTab) => void;
 }
 
 const Ctx = createContext<UsageCtx | null>(null);
@@ -26,6 +29,7 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
+  const [tab, setTab] = useState<DashboardTab>("overview");
 
   const setWindow = (w: TimeWindow) => {
     if (w === "custom") return; // disabled
@@ -58,7 +62,7 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
   }, [role, selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{ role, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt }}>
+    <Ctx.Provider value={{ role, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab }}>
       {children}
     </Ctx.Provider>
   );
