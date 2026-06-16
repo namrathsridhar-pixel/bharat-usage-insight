@@ -363,21 +363,21 @@ export function VolumeHealth() {
     <section>
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <Card className="p-4">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Total requests</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalRequests)}</div>
-          <div className="mt-2"><Delta pct={reqDelta} /></div>
-        </Card>
-        <Card className="p-4 bg-emerald-50/40 border-emerald-100">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-emerald-700">Successful</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalSuccessful)}</div>
-          <div className="mt-1.5 text-[11px] text-emerald-700 tabular-nums">{successRate.toFixed(2)}% success rate</div>
-        </Card>
-        <Card className="p-4 bg-rose-50/40 border-rose-100">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-rose-700">Failed</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalFailed)}</div>
-          <div className="mt-1.5 text-[11px] text-rose-700 tabular-nums">{failureRate.toFixed(2)}% failure rate</div>
-        </Card>
+        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #475569" }}>
+          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>Total requests</div>
+          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalRequests)}</div>
+          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#475569" }}>&nbsp;</div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #0D7C6E" }}>
+          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#0D7C6E" }}>Successful</div>
+          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalSuccessful)}</div>
+          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#0D7C6E" }}>{successRate.toFixed(2)}% success rate</div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #D97706" }}>
+          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#D97706" }}>Failed</div>
+          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalFailed)}</div>
+          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#D97706" }}>{failureRate.toFixed(2)}% failure rate</div>
+        </div>
       </div>
       <Card className="p-5">
         <div className="flex items-stretch">
