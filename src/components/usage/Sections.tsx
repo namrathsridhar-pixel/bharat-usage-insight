@@ -226,7 +226,7 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
           </div>
           <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
         </div>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
+        <div className={`grid gap-6 grid-cols-1 ${singleDonut ? "" : "lg:grid-cols-2"} items-start`}>
           {/* Left: Usage concentration donut */}
           <div className="relative min-w-0 flex flex-col">
             <div className="mb-1 flex items-center justify-between gap-2">
