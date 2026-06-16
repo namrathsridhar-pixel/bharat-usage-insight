@@ -18,7 +18,7 @@ export const SERVICES: ServiceDef[] = [
   { key: "ASR",                name: "ASR",                  unit: "Audio minutes processed",   unitShort: "min",    color: "#F87171", unitsPerRequest: 5 },
   { key: "TTS",                name: "TTS",                  unit: "Characters synthesized",    unitShort: "chars",  color: "#60A5FA", unitsPerRequest: 200 },
   { key: "LLM",                name: "LLM",                  unit: "Tokens processed",          unitShort: "tokens", color: "#F472B6", unitsPerRequest: 320 },
-  { key: "OCR",                name: "OCR",                  unit: "Pages / Images processed",  unitShort: "pages",  color: "#2DD4BF", unitsPerRequest: 4 },
+  { key: "OCR",                name: "OCR",                  unit: "Images processed",          unitShort: "images", color: "#2DD4BF", unitsPerRequest: 4 },
   { key: "Pipeline",           name: "Pipeline",             unit: "Jobs executed",             unitShort: "jobs",   color: "#A78BFA", unitsPerRequest: 3 },
   { key: "Transliteration",    name: "Transliteration",      unit: "Characters processed",      unitShort: "chars",  color: "#A3E635", unitsPerRequest: 150 },
   { key: "NER",                name: "NER",                  unit: "Characters processed",      unitShort: "chars",  color: "#C084FC", unitsPerRequest: 120 },
