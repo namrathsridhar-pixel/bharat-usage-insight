@@ -700,12 +700,6 @@ export function TenantRanking() {
                         {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
-                    {!r.inactive && (
-                      <div className="mt-1 flex items-center justify-between text-[10px] tabular-nums text-slate-500">
-                        <span>Avg RPS <span className="text-slate-700 font-medium">{r.avgRps.toFixed(3)}</span></span>
-                        <span>Peak RPS <span className="text-slate-700 font-medium">{Math.max(r.peakRps, r.avgRps).toFixed(3)}</span></span>
-                      </div>
-                    )}
                     {r.inactive && (
                       <div className="mt-1 text-[10px] text-slate-400 italic">No activity this period</div>
                     )}
