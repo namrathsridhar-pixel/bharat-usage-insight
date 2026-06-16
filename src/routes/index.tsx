@@ -30,13 +30,8 @@ function UsagePage() {
   );
 }
 
-type TabKey = "overview" | "tenant" | "service";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "tenant", label: "Tenant Consumption" },
-  { key: "service", label: "Service Consumption" },
-];
+
 
 function TenantContextBanner() {
   const { effectiveTenant, setSelectedTenantId } = useUsage();
