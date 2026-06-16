@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UsageProvider, useUsage } from "@/lib/usage/context";
 import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
