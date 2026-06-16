@@ -248,12 +248,22 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                       stroke="#fff"
                       strokeWidth={2}
                       isAnimationActive={false}
+                      onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
                     >
-                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      {donut.map((d, i) => (
+                        <Cell
+                          key={i}
+                          fill={d.color}
+                          style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }}
+                        />
+                      ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                      formatter={(v: number, _n, p: any) => [
+                        `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%${p.payload.id && onTenantClick ? " · Click to view" : ""}`,
+                        p.payload.name,
+                      ]}
                       separator="  "
                     />
                   </PieChart>
