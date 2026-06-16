@@ -445,8 +445,9 @@ export function VolumeHealth() {
   );
 
   return (
-    <section>
+    <section className="h-full flex flex-col">
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #475569" }}>
           <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>Total requests</div>
