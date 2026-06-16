@@ -112,7 +112,7 @@ export function PlatformPulse() {
         >
           <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>{it.label}</div>
           <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{it.value}</div>
-          <div className="mt-2" style={{ fontSize: 12 }}><Delta pct={it.delta} /></div>
+          <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
           <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
         </div>
       ))}
