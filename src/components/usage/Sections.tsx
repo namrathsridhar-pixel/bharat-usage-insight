@@ -62,6 +62,16 @@ function abbrService(name: string): string {
   return SERVICE_ABBR[name] ?? name;
 }
 
+/** Axis-only formatter: whole numbers, K/M with no decimal. */
+function formatAxisKMB(n: number): string {
+  if (!isFinite(n)) return "0";
+  const sign = n < 0 ? "-" : "";
+  const a = Math.abs(n);
+  if (a < 1000) return sign + Math.round(a).toString();
+  if (a < 1_000_000) return sign + Math.round(a / 1000) + "K";
+  return sign + Math.round(a / 1_000_000) + "M";
+}
+
 
 function useScope() {
   const { window, effectiveTenant } = useUsage();
