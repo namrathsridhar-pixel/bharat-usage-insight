@@ -36,14 +36,14 @@ function Eyebrow({ children, right, subtitle }: { children: React.ReactNode; rig
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`rounded-xl border border-slate-200 bg-white ${className}`}>{children}</div>;
 }
-function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
+function Delta({ pct, invert = false, size = 11 }: { pct: number; invert?: boolean; size?: number }) {
   if (!isFinite(pct) || pct === 0) {
-    return <span className="text-[11px] text-slate-400 tabular-nums">— 0% vs previous</span>;
+    return <span className="text-slate-400 tabular-nums" style={{ fontSize: size }}>— 0% vs previous</span>;
   }
   const up = pct >= 0;
   const good = invert ? !up : up;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] tabular-nums ${good ? "text-emerald-600" : "text-rose-600"}`}>
+    <span className={`inline-flex items-center gap-0.5 tabular-nums ${good ? "text-emerald-600" : "text-rose-600"}`} style={{ fontSize: size }}>
       {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {Math.abs(pct).toFixed(1)}% vs previous
     </span>
