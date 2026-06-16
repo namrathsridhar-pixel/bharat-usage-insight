@@ -284,6 +284,7 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
           </div>
 
           {/* Right: Top Tenants by Throughput — donut */}
+          {!singleDonut && (
           <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
             <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
               Top tenants by throughput
@@ -343,6 +344,7 @@ export function ConsumptionOverview({ singleDonut = false }: { singleDonut?: boo
               </div>
             )}
           </div>
+          )}
         </div>
       </Card>
     </section>
