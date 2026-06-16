@@ -756,7 +756,7 @@ export function ServiceMix() {
 
   return (
     <section>
-      <Eyebrow subtitle={`Request distribution by service · ${effectiveTenant?.name ?? ""}`}>Service consumption</Eyebrow>
+      <Eyebrow subtitle={effectiveTenant ? `Request distribution for ${effectiveTenant.name} · reflects selected time window` : "Platform-wide request distribution · reflects selected time window"}>Service consumption</Eyebrow>
       <Card className="p-5">
         <div className="flex items-center gap-5">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
