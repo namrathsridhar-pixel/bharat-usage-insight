@@ -519,7 +519,7 @@ export function ServiceBreakdown() {
 
   return (
     <section>
-      <Eyebrow subtitle="Consumption by service type">Service breakdown</Eyebrow>
+      <Eyebrow subtitle={effectiveTenant ? `Service consumption for ${effectiveTenant.name}` : "Consumption across all services · reflects selected time window"}>Service breakdown</Eyebrow>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
