@@ -812,27 +812,29 @@ function heatColor(v: number, max: number) {
   return HEAT_RAMP[idx];
 }
 
-export function CompareTenants() {
+export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | "serviceBar" } = {}) {
   const { windowHours, tenantId } = useScope();
   const { effectiveTenant, tick } = useUsage();
   const isTenantScoped = !!effectiveTenant;
-  const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
   const HEAT_TOP_OPTIONS = [5, 10, 25] as const;
   type HeatTopN = typeof HEAT_TOP_OPTIONS[number];
   const [heatTopN, setHeatTopN] = useState<HeatTopN>(10);
 
+  // Resolve view mode: auto = old behavior (heatmap when not scoped, bar when scoped)
+  const resolved = view === "auto" ? (isTenantScoped ? "serviceBar" : "heatmap") : view;
+
   const heat = useMemo(
-    () => (!isTenantScoped ? getHeatmap(windowHours, selected) : null),
-    [isTenantScoped, windowHours, selected]
+    () => (resolved === "heatmap" ? getHeatmap(windowHours, selected) : null),
+    [resolved, windowHours, selected]
   );
 
   const scopedRows = useMemo(
-    () => (isTenantScoped ? getFilteredData({ windowHours, tenantId }) : []),
-    [isTenantScoped, windowHours, tenantId, tick]
+    () => (resolved === "serviceBar" ? getFilteredData({ windowHours, tenantId }) : []),
+    [resolved, windowHours, tenantId, tick]
   );
   const scopedData = useMemo(() => {
-    if (!isTenantScoped) return [];
+    if (resolved !== "serviceBar") return [];
     return SERVICES.map((s) => {
       const r = scopedRows.filter((x) => x.service === s.key);
       return {
@@ -842,29 +844,19 @@ export function CompareTenants() {
         unitShort: s.unitShort,
       };
     }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
-  }, [isTenantScoped, scopedRows]);
+  }, [resolved, scopedRows]);
 
   function toggle(k: string) {
     setSelected((s) => s.includes(k) ? (s.length > 1 ? s.filter((x) => x !== k) : s) : [...s, k]);
   }
 
-  const triggerLabel = isTenantScoped ? "Service usage breakdown" : "Usage by tenant & service";
   const maxTenantTotal = heat ? Math.max(1, ...Object.values(heat.tenantTotals)) : 1;
 
   return (
     <section>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-800"
-      >
-        <span className="inline-flex items-center gap-2">
-          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          {open ? "Collapse" : "Expand"} {triggerLabel.toLowerCase()}
-        </span>
-        <span className="text-[11px] text-slate-500 uppercase tracking-wider">{triggerLabel}</span>
-      </button>
-      {open && (
-        <div className="mt-3">
+      {true && (
+        <div>
+          {/* @keep-existing-structure */}
           {isTenantScoped ? (
             <>
               <Eyebrow subtitle={`Request volume by service for ${effectiveTenant!.name}`}>Service usage breakdown</Eyebrow>
