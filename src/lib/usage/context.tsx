@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TENANTS, type TenantMeta } from "@/data/eventLog";
 import { appendLiveTick } from "@/data/eventLog";
 
@@ -8,6 +8,7 @@ export type DashboardTab = "overview" | "tenant" | "service";
 
 interface UsageCtx {
   role: Role;
+  setRole: (r: Role) => void;
   window: TimeWindow;
   setWindow: (w: TimeWindow) => void;
   selectedTenantId: string | null;
@@ -21,29 +22,45 @@ interface UsageCtx {
 }
 
 const Ctx = createContext<UsageCtx | null>(null);
-const TENANT_ADMIN_TENANT_ID = "t1";
 
-export function UsageProvider({ children, role = "platform_admin" }: { children: ReactNode; role?: Role }) {
+export function UsageProvider({ children, role: initialRole = "platform_admin" }: { children: ReactNode; role?: Role }) {
+  const [role, setRoleState] = useState<Role>(initialRole);
   const [window, setWindowState] = useState<TimeWindow>("24h");
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  // remember the Adopter Admin tenant filter so switching roles back restores it
+  const savedTenantRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [tab, setTab] = useState<DashboardTab>("overview");
 
+  const setRole = (r: Role) => {
+    setRoleState((prev) => {
+      if (prev === r) return prev;
+      if (r === "tenant_admin") {
+        // entering tenant admin — remember any current Adopter Admin tenant filter
+        savedTenantRef.current = selectedTenantId;
+      } else {
+        // returning to Adopter Admin — restore prior tenant selection (or All Tenants)
+        setSelectedTenantId(savedTenantRef.current);
+        savedTenantRef.current = null;
+      }
+      return r;
+    });
+  };
+
   const setWindow = (w: TimeWindow) => {
-    if (w === "custom") return; // disabled
+    if (w === "custom") return;
     setWindowState(w);
     setLoading(true);
     setTimeout(() => setLoading(false), 200);
   };
 
   useEffect(() => {
-    // 400ms skeleton on tenant change
     setLoading(true);
     const id = setTimeout(() => setLoading(false), 400);
     return () => clearTimeout(id);
-  }, [selectedTenantId]);
+  }, [selectedTenantId, role]);
 
   const isLive = window === "1h" || window === "24h";
   useEffect(() => {
@@ -57,12 +74,11 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
   }, [isLive]);
 
   const effectiveTenant = useMemo<TenantMeta | null>(() => {
-    if (role === "tenant_admin") return TENANTS.find((t) => t.id === TENANT_ADMIN_TENANT_ID) ?? null;
     return selectedTenantId ? TENANTS.find((t) => t.id === selectedTenantId) ?? null : null;
-  }, [role, selectedTenantId]);
+  }, [selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{ role, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab }}>
+    <Ctx.Provider value={{ role, setRole, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab }}>
       {children}
     </Ctx.Provider>
   );
