@@ -857,9 +857,9 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
       {true && (
         <div>
           {/* @keep-existing-structure */}
-          {isTenantScoped ? (
+          {resolved === "serviceBar" ? (
             <>
-              <Eyebrow subtitle={`Request volume by service for ${effectiveTenant!.name}`}>Service usage breakdown</Eyebrow>
+              <Eyebrow subtitle={`Request volume by service${isTenantScoped ? ` for ${effectiveTenant!.name}` : ""}`}>Request volume by service</Eyebrow>
               <Card className="p-5">
                 <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
                   <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 110, left: 30, bottom: 0 }}>
