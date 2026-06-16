@@ -60,6 +60,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-end gap-3 px-6">
+          <RoleSwitcher />
           <div className="px-3 py-1.5 rounded border border-slate-200 text-xs font-semibold tracking-wider text-slate-700">
             DEFAULT ADMIN
           </div>
