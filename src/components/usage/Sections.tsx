@@ -195,8 +195,8 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
-    ...topSlice.map((c) => ({ name: c.name, value: c.requests, pct: c.pct, color: c.color })),
-    ...(rest.length ? [{ name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+    ...topSlice.map((c) => ({ id: c.id, name: c.name, value: c.requests, pct: c.pct, color: c.color })),
+    ...(rest.length ? [{ id: undefined as string | undefined, name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
   ];
   
 
