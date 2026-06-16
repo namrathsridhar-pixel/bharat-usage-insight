@@ -828,12 +828,33 @@ export function ServiceMix() {
               <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>Services</div>
             </div>
           </div>
-          <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex-1 min-w-0">
             {segments.map((s) => (
-              <div key={s.key} className="flex items-center gap-2 text-[11px]">
-                <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-                <span className="flex-1 text-slate-700 truncate">{s.name}</span>
-                <span className="tabular-nums text-slate-500">{s.pct.toFixed(2)}%</span>
+              <div
+                key={s.key}
+                className="flex items-center gap-2"
+                style={{ height: 28 }}
+                title={`${s.name} — ${s.pct.toFixed(2)}%`}
+              >
+                <span className="rounded-full shrink-0" style={{ background: s.color, width: 8, height: 8 }} />
+                <span
+                  className="shrink-0 truncate"
+                  style={{ fontSize: 12, color: "#0F172A", minWidth: 180 }}
+                >
+                  {s.name}
+                </span>
+                <span
+                  className="flex-1"
+                  style={{
+                    borderBottom: "1px dotted #CBD5E1",
+                    margin: "0 6px",
+                    minWidth: 16,
+                    transform: "translateY(-3px)",
+                  }}
+                />
+                <span className="tabular-nums shrink-0 text-right" style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", minWidth: 52 }}>
+                  {s.pct.toFixed(2)}%
+                </span>
               </div>
             ))}
           </div>
