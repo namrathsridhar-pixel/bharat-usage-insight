@@ -313,6 +313,13 @@ export function getRpsData(
   const burst = burstMult(`overall:${windowHours}`);
   const peakFinal = +Math.max(Math.max(0, topVal), +(avgRps * burst).toFixed(3)).toFixed(3);
 
+  // Ensure the rendered line actually touches the displayed Peak RPS value:
+  // if peakFinal exceeds the natural chart max, lift the peak point to match.
+  if (points[topIdx] && peakFinal > topVal) {
+    if (isDaily) points[topIdx].peakRps = peakFinal;
+    else points[topIdx].platformRps = peakFinal;
+  }
+
   return { points, avgRps, peakRps: peakFinal, peakLabel: peakLabelFinal, baseline };
 
 }
