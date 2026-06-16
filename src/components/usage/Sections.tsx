@@ -36,14 +36,14 @@ function Eyebrow({ children, right, subtitle }: { children: React.ReactNode; rig
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`rounded-xl border border-slate-200 bg-white ${className}`}>{children}</div>;
 }
-function Delta({ pct, invert = false }: { pct: number; invert?: boolean }) {
+function Delta({ pct, invert = false, size = 11 }: { pct: number; invert?: boolean; size?: number }) {
   if (!isFinite(pct) || pct === 0) {
-    return <span className="text-[11px] text-slate-400 tabular-nums">— 0% vs previous</span>;
+    return <span className="text-slate-400 tabular-nums" style={{ fontSize: size }}>— 0% vs previous</span>;
   }
   const up = pct >= 0;
   const good = invert ? !up : up;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[11px] tabular-nums ${good ? "text-emerald-600" : "text-rose-600"}`}>
+    <span className={`inline-flex items-center gap-0.5 tabular-nums ${good ? "text-emerald-600" : "text-rose-600"}`} style={{ fontSize: size }}>
       {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {Math.abs(pct).toFixed(1)}% vs previous
     </span>
@@ -107,12 +107,13 @@ export function PlatformPulse() {
         <div
           key={i}
           title={`${it.label}: ${it.value}`}
-          className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default flex flex-col"
+          className="rounded-xl bg-white p-5 transition cursor-default flex flex-col"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
         >
-          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">{it.label}</div>
-          <div key={tick} className="pulse-fade mt-2 text-[28px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
-          <div className="mt-2"><Delta pct={it.delta} /></div>
-          <div className="mt-1 text-[11px] text-slate-400">{it.sub}</div>
+          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>{it.label}</div>
+          <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{it.value}</div>
+          <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
+          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
         </div>
       ))}
     </div>
@@ -346,12 +347,10 @@ export function VolumeHealth() {
   const { tick } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const totals = useMemo(() => getTotals(rows), [rows]);
-  const prev = useMemo(() => getPrevTotals(windowHours, tenantId), [windowHours, tenantId]);
   const chart = useMemo(() => getChartData(rows, windowHours), [rows, windowHours]);
 
   const successRate = totals.successRate * 100;
   const failureRate = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
-  const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
 
   const chartWithFailRate = useMemo(
     () => chart.map((p) => ({ ...p, failRate: p.total ? +((p.failed / p.total) * 100).toFixed(2) : 0 })),
@@ -362,21 +361,21 @@ export function VolumeHealth() {
     <section>
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <Card className="p-4">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Total requests</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalRequests)}</div>
-          <div className="mt-2"><Delta pct={reqDelta} /></div>
-        </Card>
-        <Card className="p-4 bg-emerald-50/40 border-emerald-100">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-emerald-700">Successful</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalSuccessful)}</div>
-          <div className="mt-1.5 text-[11px] text-emerald-700 tabular-nums">{successRate.toFixed(2)}% success rate</div>
-        </Card>
-        <Card className="p-4 bg-rose-50/40 border-rose-100">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-rose-700">Failed</div>
-          <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{formatKMB(totals.totalFailed)}</div>
-          <div className="mt-1.5 text-[11px] text-rose-700 tabular-nums">{failureRate.toFixed(2)}% failure rate</div>
-        </Card>
+        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #475569" }}>
+          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>Total requests</div>
+          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalRequests)}</div>
+          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#475569" }}>&nbsp;</div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #0D7C6E" }}>
+          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#0D7C6E" }}>Successful</div>
+          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalSuccessful)}</div>
+          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#0D7C6E" }}>{successRate.toFixed(2)}% success rate</div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #D97706" }}>
+          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#D97706" }}>Failed</div>
+          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalFailed)}</div>
+          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#D97706" }}>{failureRate.toFixed(2)}% failure rate</div>
+        </div>
       </div>
       <Card className="p-5">
         <div className="flex items-stretch">
@@ -734,20 +733,18 @@ export function ServiceMix() {
   const { windowHours, tenantId } = useScope();
   const { tick, effectiveTenant } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
   const segments = useMemo(() => {
-    const total = rows.reduce((a, r) => a + r.requests, 0) || 1;
+    const total = totalRequests || 1;
     return SERVICES.map((s) => {
       const requests = rows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0);
       return { key: s.key, name: s.name, color: s.color, requests, pct: (requests / total) * 100 };
     }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
-  }, [rows]);
-
-  const shortName = (effectiveTenant?.name ?? "")
-    .split(/\s+/).map((w) => w[0]).join("").slice(0, 4).toUpperCase();
+  }, [rows, totalRequests]);
 
   return (
     <section>
-      <Eyebrow subtitle={`Service mix · ${effectiveTenant?.name ?? ""}`}>Service share</Eyebrow>
+      <Eyebrow subtitle={`Request distribution by service · ${effectiveTenant?.name ?? ""}`}>Service consumption</Eyebrow>
       <Card className="p-5">
         <div className="flex items-center gap-5">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
@@ -773,8 +770,8 @@ export function ServiceMix() {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div className="text-[16px] font-bold text-slate-900 leading-tight">{shortName}</div>
-              <div className="text-[10px] text-slate-500 mt-1">services</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>{formatKMB(totalRequests)}</div>
+              <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>requests</div>
             </div>
           </div>
           <div className="flex-1 min-w-0 space-y-1.5">
