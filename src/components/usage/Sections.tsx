@@ -770,8 +770,8 @@ export function ServiceMix() {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>{formatKMB(totalRequests)}</div>
-              <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>requests</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>All</div>
+              <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>Services</div>
             </div>
           </div>
           <div className="flex-1 min-w-0 space-y-1.5">
