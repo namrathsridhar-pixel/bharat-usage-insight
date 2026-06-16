@@ -21,8 +21,8 @@ export const SERVICES: ServiceDef[] = [
   { key: "OCR",                name: "OCR",                  unit: "Pages / Images processed",  unitShort: "pages",  color: "#2DD4BF", unitsPerRequest: 4 },
   { key: "Pipeline",           name: "Pipeline",             unit: "Jobs executed",             unitShort: "jobs",   color: "#A78BFA", unitsPerRequest: 3 },
   { key: "Transliteration",    name: "Transliteration",      unit: "Characters processed",      unitShort: "chars",  color: "#A3E635", unitsPerRequest: 150 },
-  { key: "NER",                name: "NER",                  unit: "Requests processed",        unitShort: "req",    color: "#C084FC", unitsPerRequest: 1 },
-  { key: "LanguageDetection",  name: "Language Detection",   unit: "Requests processed",        unitShort: "req",    color: "#FB923C", unitsPerRequest: 1 },
+  { key: "NER",                name: "NER",                  unit: "Characters processed",      unitShort: "chars",  color: "#C084FC", unitsPerRequest: 120 },
+  { key: "LanguageDetection",  name: "Language Detection",   unit: "Characters processed",      unitShort: "chars",  color: "#FB923C", unitsPerRequest: 80 },
   { key: "SpeakerDiarization", name: "Speaker Diarization",  unit: "Audio minutes processed",   unitShort: "min",    color: "#94A3B8", unitsPerRequest: 8 },
 ];
 
