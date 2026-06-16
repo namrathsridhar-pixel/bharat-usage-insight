@@ -707,7 +707,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
             {Math.max(peakRps, avgRps).toFixed(3)}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
           </div>
           <div className="mt-1.5 text-[12px] text-slate-500 tabular-nums">
-            {Math.max(peakRps, avgRps).toFixed(3)} req/s · {window === "1h" ? `${peakLabel} ago` : peakLabel}
+            · {window === "1h" ? `${peakLabel} ago` : peakLabel}
           </div>
         </Card>
       </div>
@@ -716,8 +716,8 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
           <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
             <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${v} req/s`, n]} separator="  " />
+            <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => Number(v).toFixed(3)} />
+            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${Number(v).toFixed(3)} req/s`, n]} separator="  " />
             <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
             <Line
               type="monotone"
@@ -726,7 +726,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}
-              name={isDaily ? "Peak RPS" : "Platform total"}
+              name={isTenantScoped ? effectiveTenant!.name : (isDaily ? "Peak RPS" : "Platform total")}
             />
           </LineChart>
         </ResponsiveContainer>
