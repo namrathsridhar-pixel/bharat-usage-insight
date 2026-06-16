@@ -29,6 +29,7 @@ export function UsageProvider({ children, role = "platform_admin" }: { children:
   const [loading, setLoading] = useState(false);
   const [tick, setTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
+  const [tab, setTab] = useState<DashboardTab>("overview");
 
   const setWindow = (w: TimeWindow) => {
     if (w === "custom") return; // disabled
