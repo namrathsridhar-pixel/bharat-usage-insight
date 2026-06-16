@@ -418,14 +418,18 @@ export function VolumeHealth() {
         </div>
       </div>
       <Card className="p-5">
-        <div className="flex items-stretch">
-          <div className="w-8 shrink-0 flex items-center justify-center pr-1">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}>
+        {/* Top chart — Requests (60% of total height) */}
+        <div className="flex items-stretch" style={{ height: 200 }}>
+          <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
+            <span
+              className="uppercase tracking-[0.14em] font-semibold whitespace-nowrap"
+              style={{ fontSize: 10, writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}
+            >
               Requests
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartWithFailRate} margin={{ top: 10, right: 12, left: 0, bottom: 0 }} syncId="vh">
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
@@ -441,14 +445,18 @@ export function VolumeHealth() {
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="flex items-stretch -mt-1">
-          <div className="w-8 shrink-0 flex items-center justify-center pr-1">
-            <span className="text-[10px] uppercase tracking-[0.14em] font-semibold whitespace-nowrap" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}>
+        {/* Bottom chart — Failure rate % (40% of total height) */}
+        <div className="flex items-stretch -mt-1" style={{ height: 134 }}>
+          <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
+            <span
+              className="uppercase tracking-[0.14em] font-semibold whitespace-nowrap"
+              style={{ fontSize: 10, writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}
+            >
               Failure rate %
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <ResponsiveContainer width="100%" height={120}>
+            <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartWithFailRate} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} syncId="vh">
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
