@@ -268,7 +268,7 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                   <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                 </div>
               </div>
-              <div className="min-w-0 w-full" style={{ maxWidth: 480 }}>
+              <div className="flex-1 min-w-0 w-full">
                 {(() => {
                   const rows = donut.filter(d => !d.name.startsWith("Others")).slice(0, 5);
                   const maxVal = rows.length ? rows[0].value : 1;
@@ -445,8 +445,9 @@ export function VolumeHealth() {
   );
 
   return (
-    <section>
+    <section className="h-full flex flex-col">
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
         <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #475569" }}>
           <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>Total requests</div>
@@ -464,7 +465,8 @@ export function VolumeHealth() {
           <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#D97706" }}>{failureRate.toFixed(2)}% failure rate</div>
         </div>
       </div>
-      <Card className="p-5">
+      <Card className="p-5 flex-1">
+
         {/* Top chart — Requests (60% of total height) */}
         <div className="flex items-stretch" style={{ height: 200 }}>
           <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
@@ -852,18 +854,19 @@ export function ServiceMix() {
   }, [rows, totalRequests]);
 
   return (
-    <section>
+    <section className="h-full flex flex-col">
       <Eyebrow subtitle={effectiveTenant ? `Request distribution for ${effectiveTenant.name} · reflects selected time window` : "Platform-wide request distribution · reflects selected time window"}>Service consumption</Eyebrow>
-      <Card className="p-5">
-        <div className="flex items-center gap-5">
-          <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
-            <ResponsiveContainer width={200} height={200}>
+      <Card className="p-5 flex-1 flex items-center">
+        <div className="flex items-center gap-5 w-full">
+          <div className="relative shrink-0" style={{ width: 240, height: 240 }}>
+            <ResponsiveContainer width={240} height={240}>
+
               <PieChart>
                 <Pie
                   data={segments}
                   dataKey="requests"
-                  innerRadius={62}
-                  outerRadius={96}
+                  innerRadius={74}
+                  outerRadius={116}
                   paddingAngle={1}
                   stroke="#fff"
                   strokeWidth={2}
