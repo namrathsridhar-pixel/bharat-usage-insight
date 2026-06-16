@@ -83,28 +83,22 @@ function TenantDropdown() {
             {!selectedTenantId && <Check className="h-4 w-4 text-orange-500" />}
           </button>
           <div className="h-px bg-slate-100 my-1" />
-          {filtered.map((t) => {
-            const active24 = t.lastActiveHour >= 720 - 24;
-            return (
-              <button
-                key={t.id}
-                onClick={() => { setSelectedTenantId(t.id); setOpen(false); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
-              >
-                <Avatar name={t.name} color={t.avatarColor} size={30} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-900 truncate flex items-center gap-1.5">
-                    {t.name}
-                    {active24 && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-                  </div>
-                  <div className="mt-0.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan]}`}>{t.plan}</span>
-                  </div>
+          {filtered.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setSelectedTenantId(t.id); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
+            >
+              <Avatar name={t.name} color={t.avatarColor} size={30} />
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-slate-900 truncate">{t.name}</div>
+                <div className="mt-0.5">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan]}`}>{t.plan}</span>
                 </div>
-                {selectedTenantId === t.id && <Check className="h-4 w-4 text-orange-500" />}
-              </button>
-            );
-          })}
+              </div>
+              {selectedTenantId === t.id && <Check className="h-4 w-4 text-orange-500" />}
+            </button>
+          ))}
         </div>
       </PopoverContent>
     </Popover>
@@ -121,8 +115,8 @@ function SegmentedTabs() {
   const { tab, setTab } = useUsage();
   return (
     <div
-      className="inline-flex items-center p-0.5"
-      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 4 }}
+      className="inline-flex items-center"
+      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 6, padding: 3 }}
     >
       {TAB_SEGMENTS.map((s) => {
         const active = tab === s.key;
@@ -132,12 +126,12 @@ function SegmentedTabs() {
             onClick={() => setTab(s.key)}
             className="transition-all duration-150 ease-out"
             style={{
-              padding: "8px 16px",
+              padding: "6px 14px",
               borderRadius: 4,
               background: active ? "#FFFFFF" : "transparent",
               color: active ? "#0F172A" : "#475569",
               fontSize: 13,
-              fontWeight: active ? 600 : 400,
+              fontWeight: active ? 600 : 500,
               boxShadow: active ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
               border: "none",
               cursor: "pointer",
@@ -152,9 +146,23 @@ function SegmentedTabs() {
   );
 }
 
+/** Static read-only tenant pill — Tenant Admin mode replacement for the dropdown. */
+function TenantPill({ tenant }: { tenant: TenantMeta }) {
+  return (
+    <div
+      className="inline-flex items-center gap-2 px-3 py-1.5"
+      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 999, fontSize: 13, fontWeight: 500, color: "#0F172A" }}
+    >
+      <Avatar name={tenant.name} color={tenant.avatarColor} size={18} />
+      <span className="truncate max-w-[220px]">{tenant.name}</span>
+    </div>
+  );
+}
+
 export function FilterBar() {
-  const { window, setWindow, effectiveTenant, setSelectedTenantId } = useUsage();
+  const { window, setWindow, effectiveTenant, setSelectedTenantId, role } = useUsage();
   const ago = useUpdatedAgo();
+  const isTenantAdmin = role === "tenant_admin";
 
   return (
     <div className="space-y-2">
@@ -180,16 +188,21 @@ export function FilterBar() {
 
         <div className="flex-1" />
 
-        <TenantDropdown />
-
-        <SegmentedTabs />
+        <div className="flex items-center gap-2">
+          {isTenantAdmin && effectiveTenant ? (
+            <TenantPill tenant={effectiveTenant} />
+          ) : (
+            <TenantDropdown />
+          )}
+          {!isTenantAdmin && <SegmentedTabs />}
+        </div>
       </div>
 
       <div className="flex justify-end" style={{ fontSize: 11, fontStyle: "italic", color: "#94A3B8" }}>
         Last refreshed: {ago}
       </div>
 
-      {effectiveTenant && (
+      {!isTenantAdmin && effectiveTenant && (
         <div className="flex">
           <button
             onClick={() => setSelectedTenantId(null)}
