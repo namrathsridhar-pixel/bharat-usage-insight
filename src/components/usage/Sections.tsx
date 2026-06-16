@@ -268,7 +268,7 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                   <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
                 </div>
               </div>
-              <div className="min-w-0 w-full" style={{ maxWidth: 480 }}>
+              <div className="flex-1 min-w-0 w-full">
                 {(() => {
                   const rows = donut.filter(d => !d.name.startsWith("Others")).slice(0, 5);
                   const maxVal = rows.length ? rows[0].value : 1;
