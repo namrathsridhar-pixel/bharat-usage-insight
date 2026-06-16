@@ -129,7 +129,7 @@ function PageInner() {
           {tab === "overview" && (
             <>
               <PlatformPulse />
-              {!isTenantScoped && <ConsumptionOverview singleDonut />}
+              {!isTenantScoped && <ConsumptionOverview singleDonut onTenantClick={handleTenantDrilldown} />}
               <VolumeHealth />
             </>
           )}
@@ -144,9 +144,10 @@ function PageInner() {
 
           {tab === "service" && (
             <>
-              {isTenantScoped && <ServiceMix />}
+              <ServiceKPIs />
+              <ServiceMix />
               <ServiceBreakdown />
-              {isTenantScoped && <CompareTenants view="serviceBar" />}
+              <CompareTenants view="serviceBar" />
             </>
           )}
         </div>
