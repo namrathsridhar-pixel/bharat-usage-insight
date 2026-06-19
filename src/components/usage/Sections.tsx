@@ -1,7 +1,7 @@
 import { useUsage } from "@/lib/usage/context";
 import { useMemo, useState } from "react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, Line, LineChart, Pie, PieChart,
   ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
 } from "recharts";
 import {
