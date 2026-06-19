@@ -1,7 +1,7 @@
 import { useUsage } from "@/lib/usage/context";
 import { useMemo, useState } from "react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, Line, LineChart, Pie, PieChart,
   ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
 } from "recharts";
 import {
@@ -506,71 +506,47 @@ export function VolumeHealth() {
         </div>
       </div>
       <Card className="p-5 flex-1">
-
-        {/* Top chart — Requests (60% of total height) */}
-        <div className="flex items-stretch" style={{ height: 200 }}>
-          <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
-            <span
-              className="uppercase tracking-[0.14em] font-semibold whitespace-nowrap"
-              style={{ fontSize: 10, writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#3B82F6" }}
-            >
-              Requests
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartWithFailRate} margin={{ top: 10, right: 12, left: 0, bottom: 0 }} syncId="vh">
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="label" tick={false} axisLine={false} tickLine={false} height={0} />
-                <YAxis width={52} tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatAxisKMB(v)} />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                  formatter={(v: number) => [formatAxisKMB(v), "Requests"]}
-                  labelFormatter={(l) => `Time  ${l}`}
-                  separator="  "
-                />
-                <Area type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        {/* Bottom chart — Failure rate % (40% of total height) */}
-        <div className="flex items-stretch -mt-1" style={{ height: 134 }}>
-          <div className="shrink-0 flex items-center justify-center" style={{ width: 28, marginRight: 12 }}>
-            <span
-              className="uppercase tracking-[0.14em] font-semibold whitespace-nowrap"
-              style={{ fontSize: 10, writingMode: "vertical-rl", transform: "rotate(180deg)", color: "#EF4444" }}
-            >
-              Failure rate %
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartWithFailRate} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} syncId="vh">
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-                <YAxis
-                  width={52}
-                  domain={[0, 10]}
-                  ticks={[0, 5, 10]}
-                  tick={{ fontSize: 11, fill: "#64748B" }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${Math.round(v)}%`}
-                />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                  formatter={(v: number) => [`${v.toFixed(2)}%`, "Failure rate"]}
-                  labelFormatter={(l) => `Time  ${l}`}
-                  separator="  "
-                />
-                <ReferenceLine y={0} stroke="#E2E8F0" strokeWidth={1} />
-                <Line type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+        <div style={{ width: "100%", height: 340 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartWithFailRate} margin={{ top: 16, right: 8, left: 8, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+              <YAxis
+                yAxisId="left"
+                width={52}
+                tick={{ fontSize: 11, fill: "#3B82F6" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => formatAxisKMB(v)}
+                label={{ value: "REQUESTS", angle: -90, position: "insideLeft", offset: 14, style: { fontSize: 10, fill: "#3B82F6", letterSpacing: "0.14em", fontWeight: 600, textAnchor: "middle" } }}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                width={52}
+                domain={[0, 100]}
+                ticks={[0, 25, 50, 75, 100]}
+                tick={{ fontSize: 11, fill: "#EF4444" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${Math.round(v)}%`}
+                label={{ value: "FAILURE RATE %", angle: 90, position: "insideRight", offset: 14, style: { fontSize: 10, fill: "#EF4444", letterSpacing: "0.14em", fontWeight: 600, textAnchor: "middle" } }}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                formatter={(v: number, name: string) =>
+                  name === "failRate" ? [`${Number(v).toFixed(2)}%`, "Failure rate"] : [formatAxisKMB(Number(v)), "Requests"]
+                }
+                labelFormatter={(l) => `Time  ${l}`}
+                separator="  "
+              />
+              <Area yAxisId="left" type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
+              <Line yAxisId="right" type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </Card>
+
     </section>
   );
 }
