@@ -519,7 +519,7 @@ export function VolumeHealth() {
                 }}
               />
               <Bar dataKey="successful" stackId="a" fill="#22C55E" fillOpacity={0.8} isAnimationActive={false} />
-              <Bar dataKey="failed" stackId="a" fill="#EF4444" fillOpacity={0.9} radius={[3, 3, 0, 0]} isAnimationActive={false} minPointSize={(v: number) => (v > 0 ? 3 : 0)} />
+              <Bar dataKey="failed" stackId="a" fill="#EF4444" fillOpacity={0.9} radius={[3, 3, 0, 0]} isAnimationActive={false} minPointSize={(v) => ((v ?? 0) > 0 ? 3 : 0)} />
             </BarChart>
           </ResponsiveContainer>
         </div>
