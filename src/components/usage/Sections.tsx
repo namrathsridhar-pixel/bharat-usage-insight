@@ -862,21 +862,6 @@ export function ServiceMix() {
   return (
     <section>
       <Eyebrow subtitle={subtitle}>Service consumption</Eyebrow>
-  const { windowHours, tenantId } = useScope();
-  const { tick, effectiveTenant } = useUsage();
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
-  const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
-  const segments = useMemo(() => {
-    const total = totalRequests || 1;
-    return SERVICES.map((s) => {
-      const requests = rows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0);
-      return { key: s.key, name: s.name, color: s.color, requests, pct: (requests / total) * 100 };
-    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
-  }, [rows, totalRequests]);
-
-  return (
-    <section>
-      <Eyebrow subtitle={effectiveTenant ? `Request distribution for ${effectiveTenant.name} · reflects selected time window` : "Platform-wide request distribution · reflects selected time window"}>Service consumption</Eyebrow>
       <Card className="p-5">
         <div className="flex items-center gap-5 w-full">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
