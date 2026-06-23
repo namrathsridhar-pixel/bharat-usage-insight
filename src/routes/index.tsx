@@ -5,7 +5,7 @@ import { PortalShell } from "@/components/usage/PortalShell";
 import { FilterBar } from "@/components/usage/FilterBar";
 import {
   PlatformPulse, TenantOverview, ConsumptionOverview, VolumeHealth, ServiceBreakdown,
-  TenantRanking, ServiceMix, ServiceKPIs, ThroughputLoad, CompareTenants, LoadingOverlay,
+  TenantRanking, ServiceKPIs, CompareTenants, LoadingOverlay,
 } from "@/components/usage/Sections";
 import { Toaster } from "@/components/ui/sonner";
 import { TENANTS } from "@/data/eventLog";
