@@ -674,21 +674,32 @@ export function TenantRanking() {
               <span>Showing: {effectiveTenant.name}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-              {TOP_OPTIONS.map((n) => {
-                const active = topN === n;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => setTopN(n)}
-                    className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
-                      active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    {`Top ${n}`}
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: 11, color: "#94A3B8" }}>Show</span>
+              <div className="inline-flex items-center overflow-hidden bg-white rounded-md" style={{ border: "1px solid #E2E8F0" }}>
+                {TOP_OPTIONS.map((n, i) => {
+                  const active = topN === n;
+                  const isLast = i === TOP_OPTIONS.length - 1;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => setTopN(n)}
+                      className="transition"
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 12,
+                        fontWeight: active ? 600 : 500,
+                        color: active ? "#FFFFFF" : "#475569",
+                        background: active ? "#F97316" : "#FFFFFF",
+                        borderRight: isLast ? "none" : "1px solid #E2E8F0",
+                        borderRadius: 0,
+                      }}
+                    >
+                      {`Top ${n}`}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )
         }
