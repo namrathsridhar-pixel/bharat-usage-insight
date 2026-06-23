@@ -632,14 +632,13 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant } = useUsage();
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
   const TOP_OPTIONS = [5, 10, 25] as const;
   type TopN = typeof TOP_OPTIONS[number];
-  const [topN, setTopN] = useState<TopN>(10);
   const isScoped = !!effectiveTenant;
 
   function handleClick(id: string) {
@@ -648,12 +647,12 @@ export function TenantRanking() {
   }
 
   const activeRanked = ranked.filter((r) => !r.inactive);
-  const limit = isScoped ? activeRanked.length : Math.min(topN, activeRanked.length);
+  const limit = isScoped ? activeRanked.length : Math.min(tenantRankTopN, activeRanked.length);
   const visibleAll = isScoped
     ? activeRanked.filter((r) => r.tenant.id === tenantId)
     : activeRanked.slice(0, limit);
   const visible = visibleAll;
-  const isExpanded = !isScoped && topN > 10;
+  const isExpanded = !isScoped && tenantRankTopN > 10;
 
   // K/M/B for compact (≤10), Indian K/L/Cr for detail
   const fmt = isExpanded ? formatLakhCr : formatKMB;
@@ -678,12 +677,12 @@ export function TenantRanking() {
               <span style={{ fontSize: 11, color: "#94A3B8" }}>Show</span>
               <div className="inline-flex items-center overflow-hidden bg-white rounded-md" style={{ border: "1px solid #E2E8F0" }}>
                 {TOP_OPTIONS.map((n, i) => {
-                  const active = topN === n;
+                  const active = tenantRankTopN === n;
                   const isLast = i === TOP_OPTIONS.length - 1;
                   return (
                     <button
                       key={n}
-                      onClick={() => setTopN(n)}
+                      onClick={() => setTenantRankTopN(n)}
                       className="transition"
                       style={{
                         padding: "8px 14px",
@@ -947,12 +946,9 @@ function heatColor(v: number, max: number) {
 
 export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | "serviceBar" } = {}) {
   const { windowHours, tenantId } = useScope();
-  const { effectiveTenant, tick } = useUsage();
+  const { effectiveTenant, tick, tenantRankTopN } = useUsage();
   const isTenantScoped = !!effectiveTenant;
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
-  const HEAT_TOP_OPTIONS = [5, 10, 25] as const;
-  type HeatTopN = typeof HEAT_TOP_OPTIONS[number];
-  const [heatTopN, setHeatTopN] = useState<HeatTopN>(10);
 
   // Resolve view mode: auto = old behavior (heatmap when not scoped, bar when scoped)
   const resolved = view === "auto" ? (isTenantScoped ? "serviceBar" : "heatmap") : view;
@@ -1034,24 +1030,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                         <span className="rounded-full" style={{ background: effectiveTenant.avatarColor, width: 8, height: 8, display: "inline-block" }} />
                         <span>Showing: {effectiveTenant.name}</span>
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-1 rounded-md border border-slate-200 p-0.5 bg-white">
-                        {HEAT_TOP_OPTIONS.map((n) => {
-                          const active = heatTopN === n;
-                          return (
-                            <button
-                              key={n}
-                              onClick={() => setHeatTopN(n)}
-                              className={`px-2 py-0.5 text-[10px] font-semibold rounded transition ${
-                                active ? "bg-orange-500 text-white" : "text-slate-500 hover:text-slate-700"
-                              }`}
-                            >
-                              {`Top ${n}`}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                    ) : null}
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
@@ -1101,7 +1080,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                       .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
                       .filter((t) => (isTenantScoped ? t.id === tenantId : true))
                       .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
-                      .slice(0, isTenantScoped ? 1 : heatTopN)
+                      .slice(0, isTenantScoped ? 1 : tenantRankTopN)
                       .map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
                       return (
@@ -1144,7 +1123,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                   </tbody>
                 </table>
                 <div className="mt-3 text-[12px] text-slate-500">
-                  Showing Top {heatTopN} tenants by total request volume. Adjust using the selector above.
+                  Showing Top {isTenantScoped ? 1 : tenantRankTopN} tenants by total request volume, matching the Tenant Ranking filter.
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
                   <span className="italic">Colour intensity = request volume.</span>

@@ -19,6 +19,8 @@ interface UsageCtx {
   lastUpdatedAt: number;
   tab: DashboardTab;
   setTab: (t: DashboardTab) => void;
+  tenantRankTopN: number;
+  setTenantRankTopN: (n: number) => void;
 }
 
 const Ctx = createContext<UsageCtx | null>(null);
@@ -33,6 +35,7 @@ export function UsageProvider({ children, role: initialRole = "platform_admin" }
   const [tick, setTick] = useState(0);
   const [lastUpdatedAt, setLastUpdatedAt] = useState(Date.now());
   const [tab, setTab] = useState<DashboardTab>("overview");
+  const [tenantRankTopN, setTenantRankTopN] = useState<number>(10);
 
   const setRole = (r: Role) => {
     setRoleState((prev) => {
@@ -78,7 +81,7 @@ export function UsageProvider({ children, role: initialRole = "platform_admin" }
   }, [selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{ role, setRole, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab }}>
+    <Ctx.Provider value={{ role, setRole, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab, tenantRankTopN, setTenantRankTopN }}>
       {children}
     </Ctx.Provider>
   );
