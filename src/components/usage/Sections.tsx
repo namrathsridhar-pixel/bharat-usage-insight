@@ -632,14 +632,13 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant } = useUsage();
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
   const TOP_OPTIONS = [5, 10, 25] as const;
   type TopN = typeof TOP_OPTIONS[number];
-  const [topN, setTopN] = useState<TopN>(10);
   const isScoped = !!effectiveTenant;
 
   function handleClick(id: string) {
@@ -648,12 +647,12 @@ export function TenantRanking() {
   }
 
   const activeRanked = ranked.filter((r) => !r.inactive);
-  const limit = isScoped ? activeRanked.length : Math.min(topN, activeRanked.length);
+  const limit = isScoped ? activeRanked.length : Math.min(tenantRankTopN, activeRanked.length);
   const visibleAll = isScoped
     ? activeRanked.filter((r) => r.tenant.id === tenantId)
     : activeRanked.slice(0, limit);
   const visible = visibleAll;
-  const isExpanded = !isScoped && topN > 10;
+  const isExpanded = !isScoped && tenantRankTopN > 10;
 
   // K/M/B for compact (≤10), Indian K/L/Cr for detail
   const fmt = isExpanded ? formatLakhCr : formatKMB;
@@ -678,12 +677,12 @@ export function TenantRanking() {
               <span style={{ fontSize: 11, color: "#94A3B8" }}>Show</span>
               <div className="inline-flex items-center overflow-hidden bg-white rounded-md" style={{ border: "1px solid #E2E8F0" }}>
                 {TOP_OPTIONS.map((n, i) => {
-                  const active = topN === n;
+                  const active = tenantRankTopN === n;
                   const isLast = i === TOP_OPTIONS.length - 1;
                   return (
                     <button
                       key={n}
-                      onClick={() => setTopN(n)}
+                      onClick={() => setTenantRankTopN(n)}
                       className="transition"
                       style={{
                         padding: "8px 14px",
