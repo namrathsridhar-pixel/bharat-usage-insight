@@ -476,36 +476,19 @@ export function VolumeHealth() {
   const totals = useMemo(() => getTotals(rows), [rows]);
   const chart = useMemo(() => getChartData(rows, windowHours), [rows, windowHours]);
 
-  const successRate = totals.successRate * 100;
-  const failureRate = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
+  void totals;
 
   return (
     <section className="h-full flex flex-col">
-      <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
+      <Eyebrow subtitle="Request volume over the selected time window">Request volume &amp; health</Eyebrow>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #475569" }}>
-          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#475569" }}>Total requests</div>
-          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalRequests)}</div>
-          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#475569" }}>&nbsp;</div>
-        </div>
-        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #0D7C6E" }}>
-          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#0D7C6E" }}>Successful</div>
-          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalSuccessful)}</div>
-          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#0D7C6E" }}>{successRate.toFixed(2)}% success rate</div>
-        </div>
-        <div className="rounded-xl p-4" style={{ background: "#F8FAFC", borderLeft: "3px solid #D97706" }}>
-          <div className="uppercase tracking-[0.14em]" style={{ fontSize: 11, fontWeight: 600, color: "#D97706" }}>Failed</div>
-          <div className="mt-1.5 leading-none tabular-nums" style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>{formatKMB(totals.totalFailed)}</div>
-          <div className="mt-1.5 tabular-nums" style={{ fontSize: 12, color: "#D97706" }}>{failureRate.toFixed(2)}% failure rate</div>
-        </div>
-      </div>
       <Card className="p-5 flex-1">
         <div style={{ width: "100%", height: 340 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} interval={0} minTickGap={0} />
+
               <YAxis
                 width={56}
                 tick={{ fontSize: 11, fill: "#64748B" }}
