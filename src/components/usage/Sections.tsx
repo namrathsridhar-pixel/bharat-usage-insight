@@ -626,7 +626,7 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
-  const TOP_OPTIONS = [5, 10, 25] as const;
+  const TOP_OPTIONS = [10, 25] as const;
   type TopN = typeof TOP_OPTIONS[number];
   const isScoped = !!effectiveTenant;
 
