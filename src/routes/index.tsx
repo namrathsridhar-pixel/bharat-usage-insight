@@ -174,20 +174,11 @@ function PageInner() {
 
         <LoadingOverlay>
           <div ref={contentRef} className="space-y-6">
-            {/* Section 1 — Consumption Summary (4 KPI cards) */}
-            <PlatformPulse />
-
-            {/* Section 2 — Request volume & health (full width) */}
+            {/* Section 1 — Request volume & health (full width) */}
             <VolumeHealth />
 
-            {/* Section 3 — Service consumption (donut + legend) */}
-            <ServiceMix />
-
-            {/* Section 4 — Service breakdown */}
+            {/* Section 2 — Service breakdown */}
             <ServiceBreakdown />
-
-            {/* Section 5 — Throughput */}
-            <ThroughputLoad />
           </div>
         </LoadingOverlay>
 
