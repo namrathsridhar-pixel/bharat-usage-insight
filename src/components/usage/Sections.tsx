@@ -1080,7 +1080,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                       .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
                       .filter((t) => (isTenantScoped ? t.id === tenantId : true))
                       .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
-                      .slice(0, isTenantScoped ? 1 : heatTopN)
+                      .slice(0, isTenantScoped ? 1 : tenantRankTopN)
                       .map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
                       return (
@@ -1123,7 +1123,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                   </tbody>
                 </table>
                 <div className="mt-3 text-[12px] text-slate-500">
-                  Showing Top {heatTopN} tenants by total request volume. Adjust using the selector above.
+                  Showing Top {isTenantScoped ? 1 : tenantRankTopN} tenants by total request volume, matching the Tenant Ranking filter.
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
                   <span className="italic">Colour intensity = request volume.</span>
