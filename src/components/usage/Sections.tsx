@@ -479,11 +479,6 @@ export function VolumeHealth() {
   const successRate = totals.successRate * 100;
   const failureRate = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
 
-  const chartWithFailRate = useMemo(
-    () => chart.map((p) => ({ ...p, failRate: p.total ? +((p.failed / p.total) * 100).toFixed(2) : 0 })),
-    [chart]
-  );
-
   return (
     <section className="h-full flex flex-col">
       <Eyebrow subtitle="Total requests and failure rate over the selected period">Request volume &amp; health</Eyebrow>
@@ -508,41 +503,35 @@ export function VolumeHealth() {
       <Card className="p-5 flex-1">
         <div style={{ width: "100%", height: 340 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartWithFailRate} margin={{ top: 16, right: 8, left: 8, bottom: 0 }}>
+            <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
               <YAxis
-                yAxisId="left"
-                width={52}
-                tick={{ fontSize: 11, fill: "#3B82F6" }}
+                width={56}
+                tick={{ fontSize: 11, fill: "#64748B" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => formatAxisKMB(v)}
-                label={{ value: "REQUESTS", angle: -90, position: "insideLeft", offset: 14, style: { fontSize: 10, fill: "#3B82F6", letterSpacing: "0.14em", fontWeight: 600, textAnchor: "middle" } }}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                width={52}
-                domain={[0, 100]}
-                ticks={[0, 25, 50, 75, 100]}
-                tick={{ fontSize: 11, fill: "#EF4444" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${Math.round(v)}%`}
-                label={{ value: "FAILURE RATE %", angle: 90, position: "insideRight", offset: 14, style: { fontSize: 10, fill: "#EF4444", letterSpacing: "0.14em", fontWeight: 600, textAnchor: "middle" } }}
+                label={{ value: "REQUESTS", angle: -90, position: "insideLeft", dx: -16, dy: 40, style: { fontSize: 10, fill: "#64748B", letterSpacing: "0.14em", fontWeight: 600, textAnchor: "middle" } }}
               />
               <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                formatter={(v: number, name: string) =>
-                  name === "failRate" ? [`${Number(v).toFixed(2)}%`, "Failure rate"] : [formatAxisKMB(Number(v)), "Requests"]
-                }
-                labelFormatter={(l) => `Time  ${l}`}
-                separator="  "
+                cursor={{ fill: "#F1F5F9" }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || !payload.length) return null;
+                  const p = payload[0].payload as ChartPointLocal;
+                  return (
+                    <div style={{ fontSize: 12, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 10px", boxShadow: "0 2px 6px rgba(15,23,42,0.06)" }}>
+                      <div style={{ fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{label}</div>
+                      <div style={{ color: "#16A34A" }}>{formatKMB(p.successful)} successful</div>
+                      <div style={{ color: "#DC2626" }}>{formatKMB(p.failed)} failed</div>
+                      <div style={{ color: "#475569", marginTop: 2 }}>{formatKMB(p.total)} total</div>
+                    </div>
+                  );
+                }}
               />
-              <Area yAxisId="left" type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} fill="#DBEAFE" isAnimationActive={false} />
-              <Line yAxisId="right" type="monotone" dataKey="failRate" stroke="#EF4444" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-            </ComposedChart>
+              <Bar dataKey="successful" stackId="a" fill="#16A34A" fillOpacity={0.4} isAnimationActive={false} />
+              <Bar dataKey="failed" stackId="a" fill="#DC2626" fillOpacity={0.4} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </Card>
@@ -550,6 +539,8 @@ export function VolumeHealth() {
     </section>
   );
 }
+
+type ChartPointLocal = { label: string; total: number; failed: number; successful: number };
 
 /* =========================================================
    ZONE 4 LEFT — Service Breakdown
