@@ -198,6 +198,8 @@ export function getChartData(rows: HourRecord[], windowHours: WindowHours): Char
     label, total, failed, successful: Math.max(0, total - failed),
   });
 
+  const hhmm = (t: Date) => (t.getHours() === 0 && t.getMinutes() === 0) ? ddMmm(t) : `${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
+
   // Last 1 hour — 6 buckets of 10 minutes
   if (windowHours === 1) {
     const lastHour = TOTAL_HOURS - 1;
@@ -208,7 +210,7 @@ export function getChartData(rows: HourRecord[], windowHours: WindowHours): Char
     const wsum = weights.reduce((a, b) => a + b, 0);
     return weights.map((w, i) => {
       const t = new Date(now.getTime() - (6 - i) * 10 * 60_000);
-      return mk(`${pad2(t.getHours())}:${pad2(t.getMinutes())}`,
+      return mk(hhmm(t),
         Math.round(totalReq * w / wsum),
         Math.round(totalFail * w / wsum));
     });
@@ -221,7 +223,7 @@ export function getChartData(rows: HourRecord[], windowHours: WindowHours): Char
       const hs = startHour + i * 4;
       const hr = rows.filter((r) => r.hour >= hs && r.hour < hs + 4);
       const t = new Date(now.getTime() - (24 - i * 4) * 3600_000);
-      return mk(`${pad2(t.getHours())}:00`,
+      return mk(hhmm(t),
         hr.reduce((a, r) => a + r.requests, 0),
         hr.reduce((a, r) => a + r.failed, 0));
     });
