@@ -946,12 +946,9 @@ function heatColor(v: number, max: number) {
 
 export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | "serviceBar" } = {}) {
   const { windowHours, tenantId } = useScope();
-  const { effectiveTenant, tick } = useUsage();
+  const { effectiveTenant, tick, tenantRankTopN } = useUsage();
   const isTenantScoped = !!effectiveTenant;
   const [selected, setSelected] = useState<string[]>(SERVICES.map((s) => s.key));
-  const HEAT_TOP_OPTIONS = [5, 10, 25] as const;
-  type HeatTopN = typeof HEAT_TOP_OPTIONS[number];
-  const [heatTopN, setHeatTopN] = useState<HeatTopN>(10);
 
   // Resolve view mode: auto = old behavior (heatmap when not scoped, bar when scoped)
   const resolved = view === "auto" ? (isTenantScoped ? "serviceBar" : "heatmap") : view;
