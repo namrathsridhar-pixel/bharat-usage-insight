@@ -187,48 +187,73 @@ export function granularityFor(windowHours: WindowHours): Granularity {
   return "1d";
 }
 
-export interface ChartPoint { label: string; total: number; failed: number; }
+export interface ChartPoint { label: string; total: number; failed: number; successful: number; }
+function pad2(n: number) { return String(n).padStart(2, "0"); }
+function ddMmm(d: Date) {
+  return `${pad2(d.getDate())} ${d.toLocaleString("en-US", { month: "short" })}`;
+}
 export function getChartData(rows: HourRecord[], windowHours: WindowHours): ChartPoint[] {
-  const g = granularityFor(windowHours);
-  if (g === "5m") {
-    // 12 buckets of 5min from the last hour's data
+  const now = new Date();
+  const mk = (label: string, total: number, failed: number): ChartPoint => ({
+    label, total, failed, successful: Math.max(0, total - failed),
+  });
+
+  // Last 1 hour — 6 buckets of 10 minutes
+  if (windowHours === 1) {
     const lastHour = TOTAL_HOURS - 1;
     const hr = rows.filter((r) => r.hour === lastHour);
     const totalReq = hr.reduce((a, r) => a + r.requests, 0);
     const totalFail = hr.reduce((a, r) => a + r.failed, 0);
-    return Array.from({ length: 12 }, (_, i) => {
-      const w = 0.6 + Math.sin((i / 12) * Math.PI) * 0.8;
-      const norm = w / 12;
-      return {
-        label: `${i * 5}m`,
-        total: Math.round(totalReq * norm),
-        failed: Math.round(totalFail * norm),
-      };
+    const weights = Array.from({ length: 6 }, (_, i) => 0.6 + Math.sin(((i + 0.5) / 6) * Math.PI) * 0.8);
+    const wsum = weights.reduce((a, b) => a + b, 0);
+    return weights.map((w, i) => {
+      const t = new Date(now.getTime() - (6 - i) * 10 * 60_000);
+      return mk(`${pad2(t.getHours())}:${pad2(t.getMinutes())}`,
+        Math.round(totalReq * w / wsum),
+        Math.round(totalFail * w / wsum));
     });
   }
-  if (g === "1h") {
-    const minHour = TOTAL_HOURS - 24;
-    return Array.from({ length: 24 }, (_, i) => {
-      const h = minHour + i;
-      const hr = rows.filter((r) => r.hour === h);
-      return {
-        label: `${String(h % 24).padStart(2, "0")}:00`,
-        total: hr.reduce((a, r) => a + r.requests, 0),
-        failed: hr.reduce((a, r) => a + r.failed, 0),
-      };
+
+  // Last 24 hours — 6 buckets of 4 hours
+  if (windowHours === 24) {
+    const startHour = TOTAL_HOURS - 24;
+    return Array.from({ length: 6 }, (_, i) => {
+      const hs = startHour + i * 4;
+      const hr = rows.filter((r) => r.hour >= hs && r.hour < hs + 4);
+      const t = new Date(now.getTime() - (24 - i * 4) * 3600_000);
+      return mk(`${pad2(t.getHours())}:00`,
+        hr.reduce((a, r) => a + r.requests, 0),
+        hr.reduce((a, r) => a + r.failed, 0));
     });
   }
-  // daily
-  const days = windowHours / 24;
+
+  // Last 7 days — daily buckets
+  if (windowHours === 168) {
+    const startHour = TOTAL_HOURS - 168;
+    return Array.from({ length: 7 }, (_, d) => {
+      const hs = startHour + d * 24;
+      const hr = rows.filter((r) => r.hour >= hs && r.hour < hs + 24);
+      const t = new Date(now.getTime() - (7 - d) * 86400_000);
+      return mk(ddMmm(t),
+        hr.reduce((a, r) => a + r.requests, 0),
+        hr.reduce((a, r) => a + r.failed, 0));
+    });
+  }
+
+  // Last 30 days (or other multi-day) — weekly buckets
+  const totalDays = windowHours / 24;
   const startHour = TOTAL_HOURS - windowHours;
-  return Array.from({ length: days }, (_, d) => {
-    const hStart = startHour + d * 24;
-    const hr = rows.filter((r) => r.hour >= hStart && r.hour < hStart + 24);
-    return {
-      label: `D${d + 1}`,
-      total: hr.reduce((a, r) => a + r.requests, 0),
-      failed: hr.reduce((a, r) => a + r.failed, 0),
-    };
+  const buckets = Math.max(1, Math.ceil(totalDays / 7));
+  return Array.from({ length: buckets }, (_, i) => {
+    const dayStart = i * 7;
+    const dayEnd = Math.min(totalDays, dayStart + 7);
+    const hs = startHour + dayStart * 24;
+    const he = startHour + dayEnd * 24;
+    const hr = rows.filter((r) => r.hour >= hs && r.hour < he);
+    const t = new Date(now.getTime() - (totalDays - dayStart) * 86400_000);
+    return mk(ddMmm(t),
+      hr.reduce((a, r) => a + r.requests, 0),
+      hr.reduce((a, r) => a + r.failed, 0));
   });
 }
 

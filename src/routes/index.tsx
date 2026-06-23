@@ -229,7 +229,6 @@ function PageInner() {
           {tab === "tenant" && (
             <>
               <TenantRanking />
-              <ThroughputLoad />
               <CompareTenants view="heatmap" />
             </>
           )}
@@ -237,7 +236,6 @@ function PageInner() {
           {tab === "service" && (
             <>
               <ServiceKPIs />
-              <ServiceMix />
               <ServiceBreakdown />
             </>
           )}
