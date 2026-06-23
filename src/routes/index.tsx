@@ -174,6 +174,9 @@ function PageInner() {
 
         <LoadingOverlay>
           <div ref={contentRef} className="space-y-6">
+            {/* KPI bar — Total Requests · Success Rate · Avg RPS (tenant-scoped) */}
+            <PlatformPulse />
+
             {/* Section 1 — Request volume & health (full width) */}
             <VolumeHealth />
 
