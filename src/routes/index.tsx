@@ -233,6 +233,7 @@ function PageInner() {
           {tab === "service" && (
             <>
               <ServiceKPIs />
+              <ServiceMix />
               <ServiceBreakdown />
             </>
           )}
