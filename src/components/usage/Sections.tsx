@@ -1089,14 +1089,20 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                             return (
                               <td key={k} className="p-0.5" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
                                 <div
-                                  className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
+                                  className="flex flex-col items-center justify-center rounded-sm tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
                                   title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(2)}% of tenant`}
                                 >
-                                  {v > 0 ? formatKMB(v) : ""}
+                                  {v > 0 ? (
+                                    <>
+                                      <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.1 }}>{formatKMB(v)}</span>
+                                      <span style={{ fontSize: 9, color: dark ? "rgba(255,255,255,0.85)" : "#64748B", lineHeight: 1.1 }}>{pct.toFixed(1)}%</span>
+                                    </>
+                                  ) : null}
                                 </div>
                               </td>
                             );
+
                           })}
                           <td className="pl-3 py-1">
                             <div className="flex items-center gap-2 justify-end">
