@@ -1193,7 +1193,6 @@ export function ServiceKPIs() {
   }, [rows]);
 
   const active = perService.filter((s) => s.requests > 0);
-  const activeCount = active.length;
   const mostUsed = [...active].sort((a, b) => b.requests - a.requests)[0];
   const highestFail = [...active].sort((a, b) => b.failRate - a.failRate)[0];
 
@@ -1201,12 +1200,8 @@ export function ServiceKPIs() {
 
   return (
     <section>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
-        <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Active services</div>
-          <div className="mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{activeCount}</div>
-          <div className="mt-2" style={{ fontSize: 12, color: "#94A3B8" }}>with requests in selected window</div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+
 
         <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
           <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Most used service</div>
