@@ -491,7 +491,7 @@ export function VolumeHealth() {
       <Card className="p-5 flex-1">
         <div style={{ width: "100%", height: 340 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }}>
+            <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} interval={0} minTickGap={0} />
 
@@ -518,8 +518,8 @@ export function VolumeHealth() {
                   );
                 }}
               />
-              <Bar dataKey="successful" stackId="a" fill="#16A34A" fillOpacity={0.4} isAnimationActive={false} />
-              <Bar dataKey="failed" stackId="a" fill="#DC2626" fillOpacity={0.4} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="successful" stackId="a" fill="#22C55E" fillOpacity={0.8} isAnimationActive={false} />
+              <Bar dataKey="failed" stackId="a" fill="#EF4444" fillOpacity={0.9} radius={[3, 3, 0, 0]} isAnimationActive={false} minPointSize={(v: number) => (v > 0 ? 3 : 0)} />
             </BarChart>
           </ResponsiveContainer>
         </div>
