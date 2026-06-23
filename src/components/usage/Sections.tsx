@@ -98,7 +98,9 @@ export function PlatformPulse() {
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
 
   const successRate = (totals.successRate * 100).toFixed(2);
-  const failureRate = totals.totalRequests ? ((totals.totalFailed / totals.totalRequests) * 100).toFixed(2) : "0.00";
+  const failureRateNum = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
+  const failureRate = failureRateNum.toFixed(2);
+  const failStatusColor = failureRateNum < 1 ? "#16A34A" : failureRateNum <= 5 ? "#F59E0B" : "#DC2626";
 
   const items = [
     {
@@ -113,6 +115,7 @@ export function PlatformPulse() {
       delta: successDelta,
       sub: `${successRate}% success rate`,
       sub2: `${formatKMB(totals.totalFailed)} failed · ${failureRate}% failure rate`,
+      boxColor: failStatusColor,
       valueColor: "#16A34A",
     },
     {
@@ -136,7 +139,14 @@ export function PlatformPulse() {
           <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: it.valueColor ?? "#0F172A" }}>{it.value}</div>
           <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
           <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
-          {it.sub2 && <div className="mt-0.5 tabular-nums" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub2}</div>}
+          {it.sub2 && (
+            <div className="mt-0.5 tabular-nums flex items-center" style={{ fontSize: 11, color: "#94A3B8", gap: 4 }}>
+              {it.boxColor && (
+                <span className="inline-block rounded-[2px]" style={{ width: 8, height: 8, background: it.boxColor, flexShrink: 0 }} />
+              )}
+              {it.sub2}
+            </div>
+          )}
         </div>
       ))}
     </div>
