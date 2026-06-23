@@ -98,7 +98,9 @@ export function PlatformPulse() {
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
 
   const successRate = (totals.successRate * 100).toFixed(2);
-  const failureRate = totals.totalRequests ? ((totals.totalFailed / totals.totalRequests) * 100).toFixed(2) : "0.00";
+  const failureRateNum = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
+  const failureRate = failureRateNum.toFixed(2);
+  const failStatusColor = failureRateNum < 1 ? "#16A34A" : failureRateNum <= 5 ? "#F59E0B" : "#DC2626";
 
   const items = [
     {
@@ -113,6 +115,7 @@ export function PlatformPulse() {
       delta: successDelta,
       sub: `${successRate}% success rate`,
       sub2: `${formatKMB(totals.totalFailed)} failed · ${failureRate}% failure rate`,
+      boxColor: failStatusColor,
       valueColor: "#16A34A",
     },
     {
