@@ -93,16 +93,13 @@ export function PlatformPulse() {
   const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(3);
   const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(3);
 
-  const activeCount = Math.max(1, getActiveTenants(rows));
-  const avgPerTenant = Math.round(totals.totalRequests / activeCount);
-  const prevAvgPerTenant = Math.round(prev.totalRequests / activeCount);
-
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
-  const srDelta = (totals.successRate - prev.successRate) * 100;
+  const successDelta = prev.totalSuccessful ? ((totals.totalSuccessful - prev.totalSuccessful) / prev.totalSuccessful) * 100 : 0;
+  const failDelta = prev.totalFailed ? ((totals.totalFailed - prev.totalFailed) / prev.totalFailed) * 100 : 0;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
-  const avgPerTenantDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
-  void avgPerTenant; void prevAvgPerTenant; void avgPerTenantDelta;
+  const successRate = (totals.successRate * 100).toFixed(2);
+  const failureRate = totals.totalRequests ? ((totals.totalFailed / totals.totalRequests) * 100).toFixed(2) : "0.00";
 
   const items = [
     {
@@ -110,14 +107,32 @@ export function PlatformPulse() {
       value: formatKMB(totals.totalRequests),
       delta: reqDelta,
       sub: tenantId ? "across selected window" : "across all services and tenants",
-      sub2: `${formatKMB(totals.totalSuccessful)} successful · ${formatKMB(totals.totalFailed)} failed`,
     },
-    { label: "Success rate",    value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,  sub: "of all requests" },
-    { label: "Avg RPS (req/s)", value: `${avgRps}`,                                  delta: rpsDelta, sub: "requests per second" },
+    {
+      label: "Successful",
+      value: formatKMB(totals.totalSuccessful),
+      delta: successDelta,
+      sub: `${successRate}% success rate`,
+      valueColor: "#16A34A",
+    },
+    {
+      label: "Failed",
+      value: formatKMB(totals.totalFailed),
+      delta: failDelta,
+      sub: `${failureRate}% failure rate`,
+      valueColor: "#DC2626",
+      invertDelta: true,
+    },
+    {
+      label: "Avg RPS (req/s)",
+      value: `${avgRps}`,
+      delta: rpsDelta,
+      sub: "requests per second",
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-stretch">
       {items.map((it, i) => (
         <div
           key={i}
@@ -126,10 +141,9 @@ export function PlatformPulse() {
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
         >
           <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>{it.label}</div>
-          <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{it.value}</div>
-          <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
+          <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: it.valueColor ?? "#0F172A" }}>{it.value}</div>
+          <div className="mt-2"><Delta pct={it.delta} invert={it.invertDelta} size={12} /></div>
           <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
-          {it.sub2 && <div className="mt-0.5 tabular-nums" style={{ fontSize: 11, color: "#475569" }}>{it.sub2}</div>}
         </div>
       ))}
     </div>
