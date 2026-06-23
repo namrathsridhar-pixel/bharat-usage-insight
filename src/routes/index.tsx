@@ -180,7 +180,10 @@ function PageInner() {
             {/* Section 1 — Request volume & health (full width) */}
             <VolumeHealth />
 
-            {/* Section 2 — Service breakdown */}
+            {/* Section 2 — Service consumption donut */}
+            <ServiceMix />
+
+            {/* Section 3 — Service breakdown */}
             <ServiceBreakdown />
           </div>
         </LoadingOverlay>
