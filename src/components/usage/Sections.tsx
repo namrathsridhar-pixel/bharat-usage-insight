@@ -95,12 +95,11 @@ export function PlatformPulse() {
 
   const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
   const successDelta = prev.totalSuccessful ? ((totals.totalSuccessful - prev.totalSuccessful) / prev.totalSuccessful) * 100 : 0;
+  const failDelta = prev.totalFailed ? ((totals.totalFailed - prev.totalFailed) / prev.totalFailed) * 100 : 0;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
 
   const successRate = (totals.successRate * 100).toFixed(2);
-  const failureRateNum = totals.totalRequests ? (totals.totalFailed / totals.totalRequests) * 100 : 0;
-  const failureRate = failureRateNum.toFixed(2);
-  const failStatusColor = failureRateNum < 1 ? "#16A34A" : failureRateNum <= 5 ? "#F59E0B" : "#DC2626";
+  const failureRate = totals.totalRequests ? ((totals.totalFailed / totals.totalRequests) * 100).toFixed(2) : "0.00";
 
   const items = [
     {
@@ -114,9 +113,15 @@ export function PlatformPulse() {
       value: formatKMB(totals.totalSuccessful),
       delta: successDelta,
       sub: `${successRate}% success rate`,
-      sub2: `${formatKMB(totals.totalFailed)} failed · ${failureRate}% failure rate`,
-      boxColor: failStatusColor,
       valueColor: "#16A34A",
+    },
+    {
+      label: "Failed",
+      value: formatKMB(totals.totalFailed),
+      delta: failDelta,
+      sub: `${failureRate}% failure rate`,
+      valueColor: "#DC2626",
+      invertDelta: true,
     },
     {
       label: "Avg RPS (req/s)",
@@ -127,7 +132,7 @@ export function PlatformPulse() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-stretch">
       {items.map((it, i) => (
         <div
           key={i}
@@ -137,16 +142,8 @@ export function PlatformPulse() {
         >
           <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>{it.label}</div>
           <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: it.valueColor ?? "#0F172A" }}>{it.value}</div>
-          <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
+          <div className="mt-2"><Delta pct={it.delta} invert={it.invertDelta} size={12} /></div>
           <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
-          {it.sub2 && (
-            <div className="mt-0.5 tabular-nums flex items-center" style={{ fontSize: 11, color: "#94A3B8", gap: 4 }}>
-              {it.boxColor && (
-                <span className="inline-block rounded-[2px]" style={{ width: 8, height: 8, background: it.boxColor, flexShrink: 0 }} />
-              )}
-              {it.sub2}
-            </div>
-          )}
         </div>
       ))}
     </div>
