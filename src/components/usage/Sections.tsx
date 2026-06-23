@@ -102,17 +102,22 @@ export function PlatformPulse() {
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
   const avgPerTenantDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
-  const allItems = [
-    { label: "Total requests",         value: formatKMB(totals.totalRequests),         delta: reqDelta,           sub: "across selected window" },
-    { label: "Success rate",           value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,          sub: "of all requests" },
-    { label: "Avg RPS (req/s)",        value: `${avgRps}`,                              delta: rpsDelta,           sub: "requests per second" },
-    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),                  delta: avgPerTenantDelta,  sub: "across active tenants" },
+  void avgPerTenant; void prevAvgPerTenant; void avgPerTenantDelta;
+
+  const items = [
+    {
+      label: "Total requests",
+      value: formatKMB(totals.totalRequests),
+      delta: reqDelta,
+      sub: tenantId ? "across selected window" : "across all services and tenants",
+      sub2: `${formatKMB(totals.totalSuccessful)} successful · ${formatKMB(totals.totalFailed)} failed`,
+    },
+    { label: "Success rate",    value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,  sub: "of all requests" },
+    { label: "Avg RPS (req/s)", value: `${avgRps}`,                                  delta: rpsDelta, sub: "requests per second" },
   ];
-  const items = tenantId ? allItems.slice(0, 3) : allItems;
 
   return (
-    <div className={`grid grid-cols-2 ${tenantId ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-3 items-stretch`}>
-
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
       {items.map((it, i) => (
         <div
           key={i}
@@ -124,6 +129,7 @@ export function PlatformPulse() {
           <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{it.value}</div>
           <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
           <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
+          {it.sub2 && <div className="mt-0.5 tabular-nums" style={{ fontSize: 11, color: "#475569" }}>{it.sub2}</div>}
         </div>
       ))}
     </div>
