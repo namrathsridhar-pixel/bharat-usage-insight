@@ -842,6 +842,27 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
 ========================================================= */
 export function ServiceMix() {
   const { windowHours, tenantId } = useScope();
+  const { tick, effectiveTenant, role } = useUsage();
+  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
+  const segments = useMemo(() => {
+    const total = totalRequests || 1;
+    return SERVICES.map((s) => {
+      const requests = rows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0);
+      return { key: s.key, name: s.name, color: s.color, requests, pct: (requests / total) * 100 };
+    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+  }, [rows, totalRequests]);
+
+  const subtitle = role === "tenant_admin"
+    ? "Your service consumption · reflects selected time window"
+    : effectiveTenant
+      ? `Request distribution for ${effectiveTenant.name} · reflects selected time window`
+      : "Platform-wide request distribution · reflects selected time window";
+
+  return (
+    <section>
+      <Eyebrow subtitle={subtitle}>Service consumption</Eyebrow>
+  const { windowHours, tenantId } = useScope();
   const { tick, effectiveTenant } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
