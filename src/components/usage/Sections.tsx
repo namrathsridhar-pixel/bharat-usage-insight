@@ -102,17 +102,22 @@ export function PlatformPulse() {
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
   const avgPerTenantDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
 
-  const allItems = [
-    { label: "Total requests",         value: formatKMB(totals.totalRequests),         delta: reqDelta,           sub: "across selected window" },
-    { label: "Success rate",           value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,          sub: "of all requests" },
-    { label: "Avg RPS (req/s)",        value: `${avgRps}`,                              delta: rpsDelta,           sub: "requests per second" },
-    { label: "Avg requests per tenant", value: formatKMB(avgPerTenant),                  delta: avgPerTenantDelta,  sub: "across active tenants" },
+  void avgPerTenant; void prevAvgPerTenant; void avgPerTenantDelta;
+
+  const items = [
+    {
+      label: "Total requests",
+      value: formatKMB(totals.totalRequests),
+      delta: reqDelta,
+      sub: tenantId ? "across selected window" : "across all services and tenants",
+      sub2: `${formatKMB(totals.totalSuccessful)} successful · ${formatKMB(totals.totalFailed)} failed`,
+    },
+    { label: "Success rate",    value: `${(totals.successRate * 100).toFixed(2)}%`, delta: srDelta,  sub: "of all requests" },
+    { label: "Avg RPS (req/s)", value: `${avgRps}`,                                  delta: rpsDelta, sub: "requests per second" },
   ];
-  const items = tenantId ? allItems.slice(0, 3) : allItems;
 
   return (
-    <div className={`grid grid-cols-2 ${tenantId ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-3 items-stretch`}>
-
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-stretch">
       {items.map((it, i) => (
         <div
           key={i}
@@ -124,6 +129,7 @@ export function PlatformPulse() {
           <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: "#0F172A" }}>{it.value}</div>
           <div className="mt-2"><Delta pct={it.delta} size={12} /></div>
           <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
+          {it.sub2 && <div className="mt-0.5 tabular-nums" style={{ fontSize: 11, color: "#475569" }}>{it.sub2}</div>}
         </div>
       ))}
     </div>
@@ -485,7 +491,7 @@ export function VolumeHealth() {
       <Card className="p-5 flex-1">
         <div style={{ width: "100%", height: 340 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }}>
+            <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} interval={0} minTickGap={0} />
 
@@ -512,8 +518,8 @@ export function VolumeHealth() {
                   );
                 }}
               />
-              <Bar dataKey="successful" stackId="a" fill="#16A34A" fillOpacity={0.4} isAnimationActive={false} />
-              <Bar dataKey="failed" stackId="a" fill="#DC2626" fillOpacity={0.4} radius={[3, 3, 0, 0]} isAnimationActive={false} />
+              <Bar dataKey="successful" stackId="a" fill="#22C55E" fillOpacity={0.8} isAnimationActive={false} />
+              <Bar dataKey="failed" stackId="a" fill="#EF4444" fillOpacity={0.9} radius={[3, 3, 0, 0]} isAnimationActive={false} minPointSize={(v) => ((v ?? 0) > 0 ? 3 : 0)} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -620,7 +626,7 @@ export function TenantRanking() {
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
-  const TOP_OPTIONS = [5, 10, 25] as const;
+  const TOP_OPTIONS = [10, 25] as const;
   type TopN = typeof TOP_OPTIONS[number];
   const isScoped = !!effectiveTenant;
 
@@ -836,7 +842,7 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
 ========================================================= */
 export function ServiceMix() {
   const { windowHours, tenantId } = useScope();
-  const { tick, effectiveTenant } = useUsage();
+  const { tick, effectiveTenant, role } = useUsage();
   const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
   const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
   const segments = useMemo(() => {
@@ -847,9 +853,15 @@ export function ServiceMix() {
     }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
   }, [rows, totalRequests]);
 
+  const subtitle = role === "tenant_admin"
+    ? "Your service consumption · reflects selected time window"
+    : effectiveTenant
+      ? `Request distribution for ${effectiveTenant.name} · reflects selected time window`
+      : "Platform-wide request distribution · reflects selected time window";
+
   return (
     <section>
-      <Eyebrow subtitle={effectiveTenant ? `Request distribution for ${effectiveTenant.name} · reflects selected time window` : "Platform-wide request distribution · reflects selected time window"}>Service consumption</Eyebrow>
+      <Eyebrow subtitle={subtitle}>Service consumption</Eyebrow>
       <Card className="p-5">
         <div className="flex items-center gap-5 w-full">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
@@ -1083,14 +1095,20 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                             return (
                               <td key={k} className="p-0.5" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
                                 <div
-                                  className="flex items-center justify-center rounded-sm text-[10px] tabular-nums"
+                                  className="flex flex-col items-center justify-center rounded-sm tabular-nums"
                                   style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
                                   title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(2)}% of tenant`}
                                 >
-                                  {v > 0 ? formatKMB(v) : ""}
+                                  {v > 0 ? (
+                                    <>
+                                      <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.1 }}>{formatKMB(v)}</span>
+                                      <span style={{ fontSize: 9, color: dark ? "rgba(255,255,255,0.85)" : "#64748B", lineHeight: 1.1 }}>{pct.toFixed(1)}%</span>
+                                    </>
+                                  ) : null}
                                 </div>
                               </td>
                             );
+
                           })}
                           <td className="pl-3 py-1">
                             <div className="flex items-center gap-2 justify-end">
