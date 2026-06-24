@@ -1085,13 +1085,16 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                     </tr>
                   </thead>
                   <tbody>
-                    {[...TENANTS]
-                      .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
-                      .filter((t) => (isTenantScoped ? t.id === tenantId : true))
-                      .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
-                      .slice(0, isTenantScoped ? 1 : tenantRankTopN)
-                      .map((t) => {
+                    {(() => {
+                      const visibleTenants = [...TENANTS]
+                        .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
+                        .filter((t) => (isTenantScoped ? t.id === tenantId : true))
+                        .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
+                        .slice(0, isTenantScoped ? 1 : tenantRankTopN);
+                      const visibleTotal = visibleTenants.reduce((a, t) => a + (heat!.tenantTotals[t.id] || 0), 0);
+                      return visibleTenants.map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
+                      const totalPct = visibleTotal ? (total / visibleTotal) * 100 : 0;
                       return (
                         <tr key={t.id} className="border-t border-slate-100">
                           <td className="py-1 pr-3">
@@ -1125,16 +1128,19 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
 
                           })}
                           <td className="pl-3 py-1">
-                            <div className="flex items-center gap-2 justify-end">
-                              <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
+                            <div className="flex flex-col items-end justify-center gap-0.5">
+                              <div className="flex items-center gap-2 justify-end">
+                                <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                  <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
+                                </div>
+                                <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatKMB(total)}</span>
                               </div>
-                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatKMB(total)}</span>
+                              <span className="text-[10px] text-slate-500 tabular-nums w-16 text-right">{totalPct.toFixed(1)}%</span>
                             </div>
                           </td>
                         </tr>
                       );
-                    })}
+                    })()}
                   </tbody>
                 </table>
                 <div className="mt-3 text-[12px] text-slate-500">
