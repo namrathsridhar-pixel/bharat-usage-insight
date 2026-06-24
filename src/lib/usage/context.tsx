@@ -21,6 +21,7 @@ interface UsageCtx {
   setTab: (t: DashboardTab) => void;
   tenantRankTopN: number;
   setTenantRankTopN: (n: number) => void;
+  refresh: () => void;
 }
 
 const Ctx = createContext<UsageCtx | null>(null);
@@ -76,12 +77,18 @@ export function UsageProvider({ children, role: initialRole = "platform_admin" }
     return () => clearInterval(id);
   }, [isLive]);
 
+  const refresh = () => {
+    appendLiveTick();
+    setTick((t) => t + 1);
+    setLastUpdatedAt(Date.now());
+  };
+
   const effectiveTenant = useMemo<TenantMeta | null>(() => {
     return selectedTenantId ? TENANTS.find((t) => t.id === selectedTenantId) ?? null : null;
   }, [selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{ role, setRole, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab, tenantRankTopN, setTenantRankTopN }}>
+    <Ctx.Provider value={{ role, setRole, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab, tenantRankTopN, setTenantRankTopN, refresh }}>
       {children}
     </Ctx.Provider>
   );
