@@ -160,7 +160,7 @@ function TenantPill({ tenant }: { tenant: TenantMeta }) {
 }
 
 export function FilterBar() {
-  const { window, setWindow, effectiveTenant, setSelectedTenantId, role } = useUsage();
+  const { window, setWindow, effectiveTenant, setSelectedTenantId, role, refresh } = useUsage();
   const ago = useUpdatedAgo();
   const isTenantAdmin = role === "tenant_admin";
 
@@ -189,6 +189,14 @@ export function FilterBar() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => refresh()}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-orange-600 transition"
+            title="Refresh data"
+            aria-label="Refresh data"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
           {isTenantAdmin && effectiveTenant ? (
             <TenantPill tenant={effectiveTenant} />
           ) : (
