@@ -4,7 +4,7 @@ import type { TimeWindow } from "@/lib/usage/context";
 import { TENANTS, type TenantMeta } from "@/data/eventLog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-import { Check, ChevronDown, Search, Users, X, Grid3x3 } from "lucide-react";
+import { Check, ChevronDown, RefreshCw, Search, Users, X, Grid3x3 } from "lucide-react";
 
 const CHIPS: { key: TimeWindow; label: string }[] = [
   { key: "1h",  label: "Last 1 hour" },
