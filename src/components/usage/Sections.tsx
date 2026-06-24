@@ -990,6 +990,15 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
 
   const maxTenantTotal = heat ? Math.max(1, ...Object.values(heat.tenantTotals)) : 1;
 
+  const visibleTenants = heat
+    ? [...TENANTS]
+        .filter((t) => (heat.tenantTotals[t.id] || 0) > 0)
+        .filter((t) => (isTenantScoped ? t.id === tenantId : true))
+        .sort((a, b) => (heat.tenantTotals[b.id] || 0) - (heat.tenantTotals[a.id] || 0))
+        .slice(0, isTenantScoped ? 1 : tenantRankTopN)
+    : [];
+  const visibleTotal = heat ? visibleTenants.reduce((a, t) => a + (heat.tenantTotals[t.id] || 0), 0) : 0;
+
   return (
     <section>
       {true && (
@@ -1085,14 +1094,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                     </tr>
                   </thead>
                   <tbody>
-                    {(() => {
-                      const visibleTenants = [...TENANTS]
-                        .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
-                        .filter((t) => (isTenantScoped ? t.id === tenantId : true))
-                        .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
-                        .slice(0, isTenantScoped ? 1 : tenantRankTopN);
-                      const visibleTotal = visibleTenants.reduce((a, t) => a + (heat!.tenantTotals[t.id] || 0), 0);
-                      return visibleTenants.map((t) => {
+                    {visibleTenants.map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
                       const totalPct = visibleTotal ? (total / visibleTotal) * 100 : 0;
                       return (
@@ -1125,7 +1127,6 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                                 </div>
                               </td>
                             );
-
                           })}
                           <td className="pl-3 py-1">
                             <div className="flex flex-col items-end justify-center gap-0.5">
@@ -1140,7 +1141,7 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                           </td>
                         </tr>
                       );
-                    })()}
+                    })}
                   </tbody>
                 </table>
                 <div className="mt-3 text-[12px] text-slate-500">
