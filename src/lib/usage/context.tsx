@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { TENANTS, type TenantMeta } from "@/data/eventLog";
 import { appendLiveTick } from "@/data/eventLog";
 
@@ -26,7 +34,13 @@ interface UsageCtx {
 
 const Ctx = createContext<UsageCtx | null>(null);
 
-export function UsageProvider({ children, role: initialRole = "platform_admin" }: { children: ReactNode; role?: Role }) {
+export function UsageProvider({
+  children,
+  role: initialRole = "platform_admin",
+}: {
+  children: ReactNode;
+  role?: Role;
+}) {
   const [role, setRoleState] = useState<Role>(initialRole);
   const [window, setWindowState] = useState<TimeWindow>("24h");
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
@@ -84,11 +98,29 @@ export function UsageProvider({ children, role: initialRole = "platform_admin" }
   };
 
   const effectiveTenant = useMemo<TenantMeta | null>(() => {
-    return selectedTenantId ? TENANTS.find((t) => t.id === selectedTenantId) ?? null : null;
+    return selectedTenantId ? (TENANTS.find((t) => t.id === selectedTenantId) ?? null) : null;
   }, [selectedTenantId]);
 
   return (
-    <Ctx.Provider value={{ role, setRole, window, setWindow, selectedTenantId, setSelectedTenantId, effectiveTenant, loading, tick, lastUpdatedAt, tab, setTab, tenantRankTopN, setTenantRankTopN, refresh }}>
+    <Ctx.Provider
+      value={{
+        role,
+        setRole,
+        window,
+        setWindow,
+        selectedTenantId,
+        setSelectedTenantId,
+        effectiveTenant,
+        loading,
+        tick,
+        lastUpdatedAt,
+        tab,
+        setTab,
+        tenantRankTopN,
+        setTenantRankTopN,
+        refresh,
+      }}
+    >
       {children}
     </Ctx.Provider>
   );
@@ -111,8 +143,12 @@ export function useUpdatedAgo(): { text: string; stale: boolean } {
   if (diff <= 30) return { text: "just now", stale: false };
   if (diff <= 60) return { text: `${diff} sec ago`, stale: false };
   const m = Math.floor(diff / 60);
-  const base = m < 60
-    ? `${m} min ago`
-    : (() => { const h = Math.floor(m / 60); return h === 1 ? "1 hour ago" : `${h} hours ago`; })();
+  const base =
+    m < 60
+      ? `${m} min ago`
+      : (() => {
+          const h = Math.floor(m / 60);
+          return h === 1 ? "1 hour ago" : `${h} hours ago`;
+        })();
   return { text: base, stale: true };
 }

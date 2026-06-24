@@ -7,9 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check, ChevronDown, RefreshCw, Search, Users, X, Grid3x3 } from "lucide-react";
 
 const CHIPS: { key: TimeWindow; label: string }[] = [
-  { key: "1h",  label: "Last 1 hour" },
+  { key: "1h", label: "Last 1 hour" },
   { key: "24h", label: "Last 24 hours" },
-  { key: "7d",  label: "Last 7 days" },
+  { key: "7d", label: "Last 7 days" },
   { key: "30d", label: "Last 30 days" },
 ];
 
@@ -21,7 +21,12 @@ const PLAN_STYLE: Record<TenantMeta["plan"], string> = {
 };
 
 function Avatar({ name, color, size = 24 }: { name: string; color: string; size?: number }) {
-  const initials = name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
   return (
     <div
       className="rounded-full grid place-items-center text-white font-semibold shrink-0"
@@ -73,7 +78,10 @@ function TenantDropdown() {
         </div>
         <div className="max-h-[400px] overflow-y-auto py-1">
           <button
-            onClick={() => { setSelectedTenantId(null); setOpen(false); }}
+            onClick={() => {
+              setSelectedTenantId(null);
+              setOpen(false);
+            }}
             className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
           >
             <div className="h-8 w-8 rounded-full bg-slate-100 grid place-items-center text-slate-700">
@@ -86,14 +94,21 @@ function TenantDropdown() {
           {filtered.map((t) => (
             <button
               key={t.id}
-              onClick={() => { setSelectedTenantId(t.id); setOpen(false); }}
+              onClick={() => {
+                setSelectedTenantId(t.id);
+                setOpen(false);
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left"
             >
               <Avatar name={t.name} color={t.avatarColor} size={30} />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-slate-900 truncate">{t.name}</div>
                 <div className="mt-0.5">
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan]}`}>{t.plan}</span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${PLAN_STYLE[t.plan]}`}
+                  >
+                    {t.plan}
+                  </span>
                 </div>
               </div>
               {selectedTenantId === t.id && <Check className="h-4 w-4 text-orange-500" />}
@@ -151,7 +166,14 @@ function TenantPill({ tenant }: { tenant: TenantMeta }) {
   return (
     <div
       className="inline-flex items-center gap-2 px-3 py-1.5"
-      style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 999, fontSize: 13, fontWeight: 500, color: "#0F172A" }}
+      style={{
+        background: "#F8FAFC",
+        border: "1px solid #E2E8F0",
+        borderRadius: 999,
+        fontSize: 13,
+        fontWeight: 500,
+        color: "#0F172A",
+      }}
     >
       <Avatar name={tenant.name} color={tenant.avatarColor} size={18} />
       <span className="truncate max-w-[220px]">{tenant.name}</span>
@@ -206,7 +228,10 @@ export function FilterBar() {
         </div>
       </div>
 
-      <div className="flex justify-end items-center gap-1.5" style={{ fontSize: 11, fontStyle: "italic", color: "#94A3B8" }}>
+      <div
+        className="flex justify-end items-center gap-1.5"
+        style={{ fontSize: 11, fontStyle: "italic", color: "#94A3B8" }}
+      >
         <span
           className="inline-block rounded-full"
           style={{ width: 6, height: 6, background: ago.stale ? "#F59E0B" : "#10B981" }}
