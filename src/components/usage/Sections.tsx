@@ -1,32 +1,66 @@
 import { useUsage } from "@/lib/usage/context";
 import { useMemo, useState } from "react";
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, Line, LineChart, Pie, PieChart,
-  ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell,
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Cell,
 } from "recharts";
-import {
-  ArrowDown, ArrowUp, ArrowUpDown, ChevronDown,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TENANTS, SERVICES } from "@/data/eventLog";
 import {
-  getFilteredData, getTotals, getActiveTenants,
-  getActiveTenants24h, getActiveTenants7d, getActiveTenants30d, getNewTenants7d,
-  getTenantRanking, getServiceBreakdown, getChartData, getRpsData,
-  getUsageConcentration, getPrevTotals,
+  getFilteredData,
+  getTotals,
+  getActiveTenants,
+  getActiveTenants24h,
+  getActiveTenants7d,
+  getActiveTenants30d,
+  getNewTenants7d,
+  getTenantRanking,
+  getServiceBreakdown,
+  getChartData,
+  getRpsData,
+  getUsageConcentration,
+  getPrevTotals,
   getHeatmap,
-  windowToHours, formatIndian, formatKMB, formatLakhCr,
+  windowToHours,
+  formatIndian,
+  formatKMB,
+  formatLakhCr,
   type WindowHours,
 } from "@/data/aggregations";
 
 /* ---------- shared bits ---------- */
-function Eyebrow({ children, right, subtitle }: { children: React.ReactNode; right?: React.ReactNode; subtitle?: string }) {
+function Eyebrow({
+  children,
+  right,
+  subtitle,
+}: {
+  children: React.ReactNode;
+  right?: React.ReactNode;
+  subtitle?: string;
+}) {
   return (
     <div className="mb-3">
       <div className="flex items-end justify-between gap-3">
-        <h2 className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">{children}</h2>
+        <h2 className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+          {children}
+        </h2>
         {right}
       </div>
       {subtitle && <div className="mt-1 text-[12px] text-slate-500">{subtitle}</div>}
@@ -34,29 +68,45 @@ function Eyebrow({ children, right, subtitle }: { children: React.ReactNode; rig
   );
 }
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-xl border border-slate-200 bg-white ${className}`}>{children}</div>;
+  return (
+    <div className={`rounded-xl border border-slate-200 bg-white ${className}`}>{children}</div>
+  );
 }
-function Delta({ pct, invert = false, size = 11 }: { pct: number; invert?: boolean; size?: number }) {
+function Delta({
+  pct,
+  invert = false,
+  size = 11,
+}: {
+  pct: number;
+  invert?: boolean;
+  size?: number;
+}) {
   if (!isFinite(pct) || pct === 0) {
-    return <span className="text-slate-400 tabular-nums" style={{ fontSize: size }}>— 0% vs previous</span>;
+    return (
+      <span className="text-slate-400 tabular-nums" style={{ fontSize: size }}>
+        — 0% vs previous
+      </span>
+    );
   }
   const up = pct >= 0;
   const good = invert ? !up : up;
   return (
-    <span className={`inline-flex items-center gap-0.5 tabular-nums ${good ? "text-emerald-600" : "text-rose-600"}`} style={{ fontSize: size }}>
+    <span
+      className={`inline-flex items-center gap-0.5 tabular-nums ${good ? "text-emerald-600" : "text-rose-600"}`}
+      style={{ fontSize: size }}
+    >
       {up ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
       {Math.abs(pct).toFixed(1)}% vs previous
     </span>
   );
 }
 
-
 /** Abbreviate long service names so they always fit on a single line in tables. */
 const SERVICE_ABBR: Record<string, string> = {
   "Language Detection": "Text LD",
   "Audio Language Detection": "Audio LD",
   "Speaker Diarization": "Spk. Diar",
-  "Transliteration": "Translit",
+  Transliteration: "Translit",
 };
 function abbrService(name: string): string {
   return SERVICE_ABBR[name] ?? name;
@@ -72,7 +122,6 @@ function formatAxisKMB(n: number): string {
   return sign + Math.round(a / 1_000_000) + "M";
 }
 
-
 function useScope() {
   const { window, effectiveTenant } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "24h" : window) as WindowHours;
@@ -87,19 +136,30 @@ export function PlatformPulse() {
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
 
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
   const totals = useMemo(() => getTotals(rows), [rows]);
   const prev = useMemo(() => getPrevTotals(windowHours, tenantId), [windowHours, tenantId]);
   const avgRps = +(totals.totalRequests / (windowHours * 3600)).toFixed(3);
   const prevAvgRps = +(prev.totalRequests / (windowHours * 3600)).toFixed(3);
 
-  const reqDelta = prev.totalRequests ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100 : 0;
-  const successDelta = prev.totalSuccessful ? ((totals.totalSuccessful - prev.totalSuccessful) / prev.totalSuccessful) * 100 : 0;
-  const failDelta = prev.totalFailed ? ((totals.totalFailed - prev.totalFailed) / prev.totalFailed) * 100 : 0;
+  const reqDelta = prev.totalRequests
+    ? ((totals.totalRequests - prev.totalRequests) / prev.totalRequests) * 100
+    : 0;
+  const successDelta = prev.totalSuccessful
+    ? ((totals.totalSuccessful - prev.totalSuccessful) / prev.totalSuccessful) * 100
+    : 0;
+  const failDelta = prev.totalFailed
+    ? ((totals.totalFailed - prev.totalFailed) / prev.totalFailed) * 100
+    : 0;
   const rpsDelta = prevAvgRps ? ((avgRps - prevAvgRps) / prevAvgRps) * 100 : 0;
 
   const successRate = (totals.successRate * 100).toFixed(2);
-  const failureRate = totals.totalRequests ? ((totals.totalFailed / totals.totalRequests) * 100).toFixed(2) : "0.00";
+  const failureRate = totals.totalRequests
+    ? ((totals.totalFailed / totals.totalRequests) * 100).toFixed(2)
+    : "0.00";
 
   const items = [
     {
@@ -140,10 +200,25 @@ export function PlatformPulse() {
           className="rounded-xl bg-white p-5 transition cursor-default flex flex-col"
           style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
         >
-          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>{it.label}</div>
-          <div key={tick} className="pulse-fade mt-2 leading-none tabular-nums" style={{ fontSize: 28, fontWeight: 700, color: it.valueColor ?? "#0F172A" }}>{it.value}</div>
-          <div className="mt-2"><Delta pct={it.delta} invert={it.invertDelta} size={12} /></div>
-          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>{it.sub}</div>
+          <div
+            className="text-[11px] uppercase font-medium tracking-[0.08em]"
+            style={{ color: "#475569" }}
+          >
+            {it.label}
+          </div>
+          <div
+            key={tick}
+            className="pulse-fade mt-2 leading-none tabular-nums"
+            style={{ fontSize: 28, fontWeight: 700, color: it.valueColor ?? "#0F172A" }}
+          >
+            {it.value}
+          </div>
+          <div className="mt-2">
+            <Delta pct={it.delta} invert={it.invertDelta} size={12} />
+          </div>
+          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>
+            {it.sub}
+          </div>
         </div>
       ))}
     </div>
@@ -155,11 +230,36 @@ export function PlatformPulse() {
 ========================================================= */
 export function TenantOverview() {
   const items = [
-    { label: "Total tenants",     value: TENANTS.length,        sub: "registered on platform",      period: "all time" },
-    { label: "Active tenants",    value: getActiveTenants24h(), sub: "last 24 hours",               period: "last 24 hours" },
-    { label: "Active tenants",    value: getActiveTenants7d(),  sub: "last 7 days",                 period: "last 7 days" },
-    { label: "Active tenants",    value: getActiveTenants30d(), sub: "last 30 days",                period: "last 30 days" },
-    { label: "New — Last 7 days", value: getNewTenants7d(),     sub: "onboarded in last 7 days",    period: "last 7 days" },
+    {
+      label: "Total tenants",
+      value: TENANTS.length,
+      sub: "registered on platform",
+      period: "all time",
+    },
+    {
+      label: "Active tenants",
+      value: getActiveTenants24h(),
+      sub: "last 24 hours",
+      period: "last 24 hours",
+    },
+    {
+      label: "Active tenants",
+      value: getActiveTenants7d(),
+      sub: "last 7 days",
+      period: "last 7 days",
+    },
+    {
+      label: "Active tenants",
+      value: getActiveTenants30d(),
+      sub: "last 30 days",
+      period: "last 30 days",
+    },
+    {
+      label: "New — Last 7 days",
+      value: getNewTenants7d(),
+      sub: "onboarded in last 7 days",
+      period: "last 7 days",
+    },
   ];
   return (
     <section>
@@ -175,8 +275,12 @@ export function TenantOverview() {
               title={`${it.label} — ${it.value} (${it.period})`}
               className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-300 hover:shadow-sm transition cursor-default"
             >
-              <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">{it.label}</div>
-              <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">{it.value}</div>
+              <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-slate-600">
+                {it.label}
+              </div>
+              <div className="mt-1.5 text-[24px] leading-none font-bold text-slate-900 tabular-nums">
+                {it.value}
+              </div>
               <div className="mt-1.5 text-[11px] text-slate-400">{it.sub}</div>
             </div>
           ))}
@@ -189,14 +293,21 @@ export function TenantOverview() {
 /* =========================================================
    ZONE 2B — Consumption Overview (3 panels)
 ========================================================= */
-export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { singleDonut?: boolean; onTenantClick?: (id: string) => void } = {}) {
+export function ConsumptionOverview({
+  singleDonut = false,
+  onTenantClick,
+}: { singleDonut?: boolean; onTenantClick?: (id: string) => void } = {}) {
   const { window } = useUsage();
   const windowHours = windowToHours(window === "custom" ? "30d" : window) as WindowHours;
   const concentration = useMemo(() => getUsageConcentration(windowHours), [windowHours]);
   const windowLabel =
-    window === "1h"  ? "last 1 hour"   :
-    window === "24h" ? "last 24 hours" :
-    window === "7d"  ? "last 7 days"   : "last 30 days";
+    window === "1h"
+      ? "last 1 hour"
+      : window === "24h"
+        ? "last 24 hours"
+        : window === "7d"
+          ? "last 7 days"
+          : "last 30 days";
 
   const curRows = useMemo(() => getFilteredData({ windowHours }), [windowHours]);
   const curTotals = useMemo(() => getTotals(curRows), [curRows]);
@@ -204,7 +315,9 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
   const activeCount = Math.max(1, getActiveTenants(curRows));
   const avgPerTenant = Math.round(curTotals.totalRequests / activeCount);
   const prevAvgPerTenant = Math.round(prevTotals.totalRequests / activeCount);
-  const avgDelta = prevAvgPerTenant ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100 : 0;
+  const avgDelta = prevAvgPerTenant
+    ? ((avgPerTenant - prevAvgPerTenant) / prevAvgPerTenant) * 100
+    : 0;
 
   // Fixed Top 5 — same 5 tenants drive both donuts
   const concTopN = 5;
@@ -215,10 +328,25 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
   const othersPct = rest.reduce((a, r) => a + r.pct, 0);
   const othersReq = rest.reduce((a, r) => a + r.requests, 0);
   const donut = [
-    ...topSlice.map((c) => ({ id: c.id, name: c.name, value: c.requests, pct: c.pct, color: c.color })),
-    ...(rest.length ? [{ id: undefined as string | undefined, name: `Others (${rest.length} tenants)`, value: othersReq, pct: othersPct, color: "#CBD5E1" }] : []),
+    ...topSlice.map((c) => ({
+      id: c.id,
+      name: c.name,
+      value: c.requests,
+      pct: c.pct,
+      color: c.color,
+    })),
+    ...(rest.length
+      ? [
+          {
+            id: undefined as string | undefined,
+            name: `Others (${rest.length} tenants)`,
+            value: othersReq,
+            pct: othersPct,
+            color: "#CBD5E1",
+          },
+        ]
+      : []),
   ];
-  
 
   // Throughput donut — same top 5 tenants/colors as Usage Concentration
   const rpsByTenant = useMemo(() => {
@@ -230,7 +358,10 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
       // burst multiplier (1.5x–3x), deterministic
       let h = 2166136261;
       const seed = `${c.id}:${windowHours}`;
-      for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+      for (let i = 0; i < seed.length; i++) {
+        h ^= seed.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
       const burst = 1.5 + (((h >>> 0) % 1000) / 1000) * 1.5;
       const peakRps = +Math.max(rawPeak, +(avgRps * burst).toFixed(3)).toFixed(3);
       return { id: c.id, name: c.name, color: c.color, avgRps, peakRps };
@@ -244,7 +375,9 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
           <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
             Consumption overview
           </div>
-          <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">reflects selected time window · {windowLabel}</div>
+          <div className="text-[10px] italic text-slate-500 whitespace-nowrap shrink-0">
+            reflects selected time window · {windowLabel}
+          </div>
         </div>
         {singleDonut ? (
           <div className="relative min-w-0 flex flex-col">
@@ -253,13 +386,15 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                 Usage concentration
               </div>
             </div>
-            <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
+            <div className="mb-3 text-[11px] text-slate-400">
+              Top 5 by request volume · reflects selected time window
+            </div>
             <div className="flex flex-col lg:flex-row gap-6 items-center min-w-0">
               <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={donut.filter(d => !d.name.startsWith("Others")).slice(0, 5)}
+                      data={donut.filter((d) => !d.name.startsWith("Others")).slice(0, 5)}
                       dataKey="value"
                       innerRadius={64}
                       outerRadius={92}
@@ -269,12 +404,27 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                       isAnimationActive={false}
                       onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
                     >
-                      {donut.filter(d => !d.name.startsWith("Others")).slice(0, 5).map((d, i) => (
-                        <Cell key={i} fill={d.color} style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }} />
-                      ))}
+                      {donut
+                        .filter((d) => !d.name.startsWith("Others"))
+                        .slice(0, 5)
+                        .map((d, i) => (
+                          <Cell
+                            key={i}
+                            fill={d.color}
+                            style={{
+                              cursor: d.id && onTenantClick ? "pointer" : "default",
+                              outline: "none",
+                            }}
+                          />
+                        ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      contentStyle={{
+                        fontSize: 12,
+                        borderRadius: 8,
+                        border: "1px solid #E2E8F0",
+                        background: "#fff",
+                      }}
                       formatter={(v: number, _n, p: any) => [
                         `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%${p.payload.id && onTenantClick ? " · Click to view" : ""}`,
                         p.payload.name,
@@ -284,13 +434,17 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 leading-none">Top {donutTopCount}</div>
-                  <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
+                  <div className="text-[20px] font-bold text-slate-900 leading-none">
+                    Top {donutTopCount}
+                  </div>
+                  <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">
+                    tenants
+                  </div>
                 </div>
               </div>
               <div className="flex-1 min-w-0 w-full">
                 {(() => {
-                  const rows = donut.filter(d => !d.name.startsWith("Others")).slice(0, 5);
+                  const rows = donut.filter((d) => !d.name.startsWith("Others")).slice(0, 5);
                   const maxVal = rows.length ? rows[0].value : 1;
                   return (
                     <>
@@ -299,7 +453,12 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                         <div className="shrink-0" style={{ width: 260 }} />
                         <div
                           className="flex-1 uppercase tracking-[0.12em] text-center"
-                          style={{ fontSize: 10, fontWeight: 500, color: "#94A3B8", paddingRight: 48 }}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 500,
+                            color: "#94A3B8",
+                            paddingRight: 48,
+                          }}
                         >
                           Request volume &amp; share
                         </div>
@@ -320,29 +479,63 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                             role={clickable ? "button" : undefined}
                             tabIndex={clickable ? 0 : undefined}
                             onClick={() => clickable && onTenantClick?.(d.id!)}
-                            onKeyDown={(e) => { if (clickable && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onTenantClick?.(d.id!); } }}
+                            onKeyDown={(e) => {
+                              if (clickable && (e.key === "Enter" || e.key === " ")) {
+                                e.preventDefault();
+                                onTenantClick?.(d.id!);
+                              }
+                            }}
                             title={`${d.name} — ${d.pct.toFixed(2)}%`}
                             className="flex items-center gap-3 px-2 rounded transition-colors"
-                            style={{ height: 48, cursor: clickable ? "pointer" : "default", borderBottom: isLast ? "none" : "1px solid #F5F7FA" }}
-                            onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = "#F8FAFC"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            style={{
+                              height: 48,
+                              cursor: clickable ? "pointer" : "default",
+                              borderBottom: isLast ? "none" : "1px solid #F5F7FA",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (clickable) e.currentTarget.style.background = "#F8FAFC";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = "transparent";
+                            }}
                           >
-                            <div className="shrink-0 flex items-center gap-2" style={{ width: 260 }}>
-                              <span className="tabular-nums text-left" style={{ fontSize: 11, color: "#94A3B8", width: 24 }}>
+                            <div
+                              className="shrink-0 flex items-center gap-2"
+                              style={{ width: 260 }}
+                            >
+                              <span
+                                className="tabular-nums text-left"
+                                style={{ fontSize: 11, color: "#94A3B8", width: 24 }}
+                              >
                                 {`#${i + 1}`}
                               </span>
-                              <span className="shrink-0 flex items-center justify-center" style={{ width: 20 }}>
-                                <span className="rounded-full" style={{ background: d.color, width: 8, height: 8 }} />
+                              <span
+                                className="shrink-0 flex items-center justify-center"
+                                style={{ width: 20 }}
+                              >
+                                <span
+                                  className="rounded-full"
+                                  style={{ background: d.color, width: 8, height: 8 }}
+                                />
                               </span>
-                              <span className="truncate" style={{ fontSize: 12, fontWeight: 500, color: "#0F172A" }}>
+                              <span
+                                className="truncate"
+                                style={{ fontSize: 12, fontWeight: 500, color: "#0F172A" }}
+                              >
                                 {d.name}
                               </span>
                             </div>
                             <div className="flex-1 min-w-0" style={{ paddingRight: 48 }}>
-                              <div className="relative rounded-full" style={{ height: 6, width: `${barPct}%`, background: d.color }}>
+                              <div
+                                className="relative rounded-full"
+                                style={{ height: 6, width: `${barPct}%`, background: d.color }}
+                              >
                                 <div
                                   className="absolute top-1/2 flex items-center gap-1 pointer-events-none"
-                                  style={{ right: 0, transform: "translate(calc(100% + 6px), -50%)" }}
+                                  style={{
+                                    right: 0,
+                                    transform: "translate(calc(100% + 6px), -50%)",
+                                  }}
                                 >
                                   <span
                                     className="tabular-nums rounded bg-white flex items-center"
@@ -359,7 +552,10 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                                   >
                                     {formatKMB(d.value)}
                                   </span>
-                                  <span className="rounded-full" style={{ background: d.color, width: 4, height: 4 }} />
+                                  <span
+                                    className="rounded-full"
+                                    style={{ background: d.color, width: 4, height: 4 }}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -376,110 +572,186 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
                   );
                 })()}
               </div>
-
             </div>
           </div>
         ) : (
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
-          {/* Left: Usage concentration donut */}
-          <div className="relative min-w-0 flex flex-col">
-            <div className="mb-1 flex items-center justify-between gap-2">
-              <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
-                Usage concentration
-              </div>
-            </div>
-            <div className="mb-3 text-[11px] text-slate-400">Top 5 by request volume · reflects selected time window</div>
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={donut}
-                      dataKey="value"
-                      innerRadius={64}
-                      outerRadius={92}
-                      paddingAngle={1}
-                      stroke="#fff"
-                      strokeWidth={2}
-                      isAnimationActive={false}
-                      onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
-                    >
-                      {donut.map((d, i) => (
-                        <Cell key={i} fill={d.color} style={{ cursor: d.id && onTenantClick ? "pointer" : "default", outline: "none" }} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                      formatter={(v: number, _n, p: any) => [
-                        `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%${p.payload.id && onTenantClick ? " · Click to view" : ""}`,
-                        p.payload.name,
-                      ]}
-                      separator="  "
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <div className="text-[20px] font-bold text-slate-900 leading-none">Top {donutTopCount}</div>
-                  <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-start">
+            {/* Left: Usage concentration donut */}
+            <div className="relative min-w-0 flex flex-col">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <div className="text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+                  Usage concentration
                 </div>
               </div>
-              <div className="flex-1 min-w-0 space-y-1.5">
-                {donut.map((d) => {
-                  const isOthers = d.name.startsWith("Others");
-                  return (
-                    <div
-                      key={d.name}
-                      title={`${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
-                      className="flex items-start gap-2"
-                      style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
-                    >
-                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: isOthers ? "#94A3B8" : d.color, width: 8, height: 8 }} />
-                      <span className={`flex-1 min-w-0 leading-tight ${isOthers ? "text-slate-400 italic" : "text-slate-900"}`} style={{ wordBreak: "normal", overflowWrap: "break-word" }}>{d.name}</span>
-                      <span className={`tabular-nums font-semibold shrink-0 text-right ${isOthers ? "text-slate-400" : "text-slate-900"}`} style={{ width: 56, fontSize: 12 }}>{d.pct.toFixed(2)}%</span>
-                    </div>
-                  );
-                })}
+              <div className="mb-3 text-[11px] text-slate-400">
+                Top 5 by request volume · reflects selected time window
               </div>
-            </div>
-          </div>
-
-          {/* Right: Top Tenants by Throughput donut */}
-          <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
-            <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
-              Top tenants by throughput
-            </div>
-            <div className="mb-3 text-[11px] text-slate-400">Top 5 by avg RPS · reflects selected time window</div>
-            {rpsByTenant.length === 0 ? (
-              <div className="text-[11px] text-slate-400 italic">No tenants with activity in this period</div>
-            ) : (
               <div className="flex items-center gap-4 min-w-0">
                 <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={rpsByTenant} dataKey="avgRps" nameKey="name" innerRadius={64} outerRadius={92} paddingAngle={1} stroke="#fff" strokeWidth={2} isAnimationActive={false}>
-                        {rpsByTenant.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      <Pie
+                        data={donut}
+                        dataKey="value"
+                        innerRadius={64}
+                        outerRadius={92}
+                        paddingAngle={1}
+                        stroke="#fff"
+                        strokeWidth={2}
+                        isAnimationActive={false}
+                        onClick={(d: any) => d?.payload?.id && onTenantClick?.(d.payload.id)}
+                      >
+                        {donut.map((d, i) => (
+                          <Cell
+                            key={i}
+                            fill={d.color}
+                            style={{
+                              cursor: d.id && onTenantClick ? "pointer" : "default",
+                              outline: "none",
+                            }}
+                          />
+                        ))}
                       </Pie>
-                      <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, _n, p: any) => [`${v.toFixed(3)} req/s`, p.payload.name]} separator="  " />
+                      <Tooltip
+                        contentStyle={{
+                          fontSize: 12,
+                          borderRadius: 8,
+                          border: "1px solid #E2E8F0",
+                          background: "#fff",
+                        }}
+                        formatter={(v: number, _n, p: any) => [
+                          `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%${p.payload.id && onTenantClick ? " · Click to view" : ""}`,
+                          p.payload.name,
+                        ]}
+                        separator="  "
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <div className="text-[20px] font-bold text-slate-900 leading-none">Top {rpsByTenant.length}</div>
-                    <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">tenants</div>
+                    <div className="text-[20px] font-bold text-slate-900 leading-none">
+                      Top {donutTopCount}
+                    </div>
+                    <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">
+                      tenants
+                    </div>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 space-y-1.5">
-                  {rpsByTenant.map((t) => (
-                    <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
-                      <span className="rounded-full shrink-0 mt-[5px]" style={{ background: t.color, width: 8, height: 8 }} />
-                      <span className="flex-1 min-w-0 text-slate-900 leading-tight">{t.name}</span>
-                      <span className="text-right tabular-nums text-slate-900 font-semibold shrink-0" style={{ width: 78 }}>{t.avgRps.toFixed(3)}</span>
-                    </div>
-                  ))}
+                  {donut.map((d) => {
+                    const isOthers = d.name.startsWith("Others");
+                    return (
+                      <div
+                        key={d.name}
+                        title={`${d.name} — ${formatKMB(d.value)} req · ${d.pct.toFixed(2)}%`}
+                        className="flex items-start gap-2"
+                        style={{ fontSize: 12, wordBreak: "normal", overflowWrap: "break-word" }}
+                      >
+                        <span
+                          className="rounded-full shrink-0 mt-[5px]"
+                          style={{
+                            background: isOthers ? "#94A3B8" : d.color,
+                            width: 8,
+                            height: 8,
+                          }}
+                        />
+                        <span
+                          className={`flex-1 min-w-0 leading-tight ${isOthers ? "text-slate-400 italic" : "text-slate-900"}`}
+                          style={{ wordBreak: "normal", overflowWrap: "break-word" }}
+                        >
+                          {d.name}
+                        </span>
+                        <span
+                          className={`tabular-nums font-semibold shrink-0 text-right ${isOthers ? "text-slate-400" : "text-slate-900"}`}
+                          style={{ width: 56, fontSize: 12 }}
+                        >
+                          {d.pct.toFixed(2)}%
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Right: Top Tenants by Throughput donut */}
+            <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-6 flex flex-col">
+              <div className="mb-1 text-[11px] uppercase tracking-[0.12em] font-semibold text-slate-600">
+                Top tenants by throughput
+              </div>
+              <div className="mb-3 text-[11px] text-slate-400">
+                Top 5 by avg RPS · reflects selected time window
+              </div>
+              {rpsByTenant.length === 0 ? (
+                <div className="text-[11px] text-slate-400 italic">
+                  No tenants with activity in this period
+                </div>
+              ) : (
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="relative shrink-0" style={{ width: 220, height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={rpsByTenant}
+                          dataKey="avgRps"
+                          nameKey="name"
+                          innerRadius={64}
+                          outerRadius={92}
+                          paddingAngle={1}
+                          stroke="#fff"
+                          strokeWidth={2}
+                          isAnimationActive={false}
+                        >
+                          {rpsByTenant.map((d, i) => (
+                            <Cell key={i} fill={d.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: 12,
+                            borderRadius: 8,
+                            border: "1px solid #E2E8F0",
+                            background: "#fff",
+                          }}
+                          formatter={(v: number, _n, p: any) => [
+                            `${v.toFixed(3)} req/s`,
+                            p.payload.name,
+                          ]}
+                          separator="  "
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <div className="text-[20px] font-bold text-slate-900 leading-none">
+                        Top {rpsByTenant.length}
+                      </div>
+                      <div className="text-[12px] font-normal text-slate-600 mt-1 leading-none">
+                        tenants
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    {rpsByTenant.map((t) => (
+                      <div key={t.id} className="flex items-start gap-2" style={{ fontSize: 12 }}>
+                        <span
+                          className="rounded-full shrink-0 mt-[5px]"
+                          style={{ background: t.color, width: 8, height: 8 }}
+                        />
+                        <span className="flex-1 min-w-0 text-slate-900 leading-tight">
+                          {t.name}
+                        </span>
+                        <span
+                          className="text-right tabular-nums text-slate-900 font-semibold shrink-0"
+                          style={{ width: 78 }}
+                        >
+                          {t.avgRps.toFixed(3)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         )}
       </Card>
     </section>
@@ -492,7 +764,10 @@ export function ConsumptionOverview({ singleDonut = false, onTenantClick }: { si
 export function VolumeHealth() {
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
   const totals = useMemo(() => getTotals(rows), [rows]);
   const chart = useMemo(() => getChartData(rows, windowHours), [rows, windowHours]);
 
@@ -500,14 +775,27 @@ export function VolumeHealth() {
 
   return (
     <section className="h-full flex flex-col">
-      <Eyebrow subtitle="Request volume over the selected time window">Request volume &amp; health</Eyebrow>
+      <Eyebrow subtitle="Request volume over the selected time window">
+        Request volume &amp; health
+      </Eyebrow>
 
       <Card className="p-5 flex-1">
         <div style={{ width: "100%", height: 340 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chart} margin={{ top: 16, right: 16, left: 28, bottom: 0 }} barCategoryGap="30%">
+            <BarChart
+              data={chart}
+              margin={{ top: 16, right: 16, left: 28, bottom: 0 }}
+              barCategoryGap="30%"
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} interval={0} minTickGap={0} />
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 11, fill: "#94A3B8" }}
+                axisLine={false}
+                tickLine={false}
+                interval={0}
+                minTickGap={0}
+              />
 
               <YAxis
                 width={56}
@@ -515,7 +803,20 @@ export function VolumeHealth() {
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => formatAxisKMB(v)}
-                label={{ value: "REQUESTS", angle: -90, position: "insideLeft", dx: -16, dy: 40, style: { fontSize: 10, fill: "#64748B", letterSpacing: "0.14em", fontWeight: 600, textAnchor: "middle" } }}
+                label={{
+                  value: "REQUESTS",
+                  angle: -90,
+                  position: "insideLeft",
+                  dx: -16,
+                  dy: 40,
+                  style: {
+                    fontSize: 10,
+                    fill: "#64748B",
+                    letterSpacing: "0.14em",
+                    fontWeight: 600,
+                    textAnchor: "middle",
+                  },
+                }}
               />
               <Tooltip
                 cursor={{ fill: "#F1F5F9" }}
@@ -523,22 +824,48 @@ export function VolumeHealth() {
                   if (!active || !payload || !payload.length) return null;
                   const p = payload[0].payload as ChartPointLocal;
                   return (
-                    <div style={{ fontSize: 12, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "8px 10px", boxShadow: "0 2px 6px rgba(15,23,42,0.06)" }}>
-                      <div style={{ fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>{label}</div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        background: "#fff",
+                        border: "1px solid #E2E8F0",
+                        borderRadius: 8,
+                        padding: "8px 10px",
+                        boxShadow: "0 2px 6px rgba(15,23,42,0.06)",
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, color: "#0F172A", marginBottom: 4 }}>
+                        {label}
+                      </div>
                       <div style={{ color: "#16A34A" }}>{formatKMB(p.successful)} successful</div>
                       <div style={{ color: "#DC2626" }}>{formatKMB(p.failed)} failed</div>
-                      <div style={{ color: "#475569", marginTop: 2 }}>{formatKMB(p.total)} total</div>
+                      <div style={{ color: "#475569", marginTop: 2 }}>
+                        {formatKMB(p.total)} total
+                      </div>
                     </div>
                   );
                 }}
               />
-              <Bar dataKey="successful" stackId="a" fill="#22C55E" fillOpacity={0.8} isAnimationActive={false} />
-              <Bar dataKey="failed" stackId="a" fill="#EF4444" fillOpacity={0.9} radius={[3, 3, 0, 0]} isAnimationActive={false} minPointSize={(v) => ((v ?? 0) > 0 ? 3 : 0)} />
+              <Bar
+                dataKey="successful"
+                stackId="a"
+                fill="#22C55E"
+                fillOpacity={0.8}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="failed"
+                stackId="a"
+                fill="#EF4444"
+                fillOpacity={0.9}
+                radius={[3, 3, 0, 0]}
+                isAnimationActive={false}
+                minPointSize={(v) => ((v ?? 0) > 0 ? 3 : 0)}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </Card>
-
     </section>
   );
 }
@@ -553,8 +880,14 @@ export function ServiceBreakdown() {
   const { effectiveTenant } = useUsage();
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
-  const services = useMemo(() => getServiceBreakdown(rows, windowHours, tenantId), [rows, windowHours, tenantId]);
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
+  const services = useMemo(
+    () => getServiceBreakdown(rows, windowHours, tenantId),
+    [rows, windowHours, tenantId],
+  );
   const [sortKey, setSortKey] = useState<SortKey>("requests");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -570,15 +903,29 @@ export function ServiceBreakdown() {
 
   function toggle(k: SortKey) {
     if (k === sortKey) setSortDir(sortDir === "desc" ? "asc" : "desc");
-    else { setSortKey(k); setSortDir("desc"); }
+    else {
+      setSortKey(k);
+      setSortDir("desc");
+    }
   }
   function Th({ k, children }: { k: SortKey; children: React.ReactNode }) {
     const active = sortKey === k;
     return (
       <th className="py-3 px-3 text-right">
-        <button onClick={() => toggle(k)} className={`inline-flex items-center gap-1 text-[11px] uppercase tracking-wider font-semibold ${active ? "text-slate-900" : "text-slate-500"}`}>
+        <button
+          onClick={() => toggle(k)}
+          className={`inline-flex items-center gap-1 text-[11px] uppercase tracking-wider font-semibold ${active ? "text-slate-900" : "text-slate-500"}`}
+        >
           {children}
-          {active ? (sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-40" />}
+          {active ? (
+            sortDir === "desc" ? (
+              <ArrowDown className="h-3 w-3" />
+            ) : (
+              <ArrowUp className="h-3 w-3" />
+            )
+          ) : (
+            <ArrowUpDown className="h-3 w-3 opacity-40" />
+          )}
         </button>
       </th>
     );
@@ -586,13 +933,23 @@ export function ServiceBreakdown() {
 
   return (
     <section>
-      <Eyebrow subtitle={effectiveTenant ? `Service consumption for ${effectiveTenant.name}` : "Consumption across all services · reflects selected time window"}>Service breakdown</Eyebrow>
+      <Eyebrow
+        subtitle={
+          effectiveTenant
+            ? `Service consumption for ${effectiveTenant.name}`
+            : "Consumption across all services · reflects selected time window"
+        }
+      >
+        Service breakdown
+      </Eyebrow>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200">
-                <th className="py-3 pl-4 pr-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-500">Service</th>
+                <th className="py-3 pl-4 pr-3 text-left text-[11px] uppercase tracking-wider font-semibold text-slate-500">
+                  Service
+                </th>
                 <Th k="requests">Total requests</Th>
                 <Th k="nativeUnits">Native consumption</Th>
                 <Th k="successRate">Success rate</Th>
@@ -600,26 +957,45 @@ export function ServiceBreakdown() {
               </tr>
             </thead>
             <tbody>
-              {sorted.filter((r) => r.requests > 0).map((r) => {
-                const sr = r.successRate * 100;
-                const srClr = sr >= 95 ? "text-emerald-700" : sr >= 90 ? "text-amber-600" : "text-rose-600";
-                const failRate = r.requests ? (r.failed / r.requests) * 100 : 0;
-                const failClr = failRate > 1 ? "text-rose-600" : "text-slate-500";
-                return (
-                  <tr key={r.service.key} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60" style={{ height: 48 }}>
-                    <td className="py-3 pl-4 pr-3 relative" title={r.service.name}>
-                      <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ background: r.service.color }} />
-                      <span className="font-medium text-slate-900 whitespace-nowrap">{abbrService(r.service.name)}</span>
-                    </td>
-                    <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">{formatLakhCr(r.requests)}</td>
-                    <td className="py-3 px-3 text-right tabular-nums text-slate-700">
-                      {formatLakhCr(r.nativeUnits)} <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
-                    </td>
-                    <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>{sr.toFixed(2)}%</td>
-                    <td className={`py-3 px-3 text-right tabular-nums font-medium ${failClr}`}>{failRate.toFixed(2)}%</td>
-                  </tr>
-                );
-              })}
+              {sorted
+                .filter((r) => r.requests > 0)
+                .map((r) => {
+                  const sr = r.successRate * 100;
+                  const srClr =
+                    sr >= 95 ? "text-emerald-700" : sr >= 90 ? "text-amber-600" : "text-rose-600";
+                  const failRate = r.requests ? (r.failed / r.requests) * 100 : 0;
+                  const failClr = failRate > 1 ? "text-rose-600" : "text-slate-500";
+                  return (
+                    <tr
+                      key={r.service.key}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
+                      style={{ height: 48 }}
+                    >
+                      <td className="py-3 pl-4 pr-3 relative" title={r.service.name}>
+                        <span
+                          className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r"
+                          style={{ background: r.service.color }}
+                        />
+                        <span className="font-medium text-slate-900 whitespace-nowrap">
+                          {abbrService(r.service.name)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right tabular-nums text-slate-900 font-medium">
+                        {formatLakhCr(r.requests)}
+                      </td>
+                      <td className="py-3 px-3 text-right tabular-nums text-slate-700">
+                        {formatLakhCr(r.nativeUnits)}{" "}
+                        <span className="text-[11px] text-slate-500">{r.service.unitShort}</span>
+                      </td>
+                      <td className={`py-3 px-3 text-right tabular-nums font-medium ${srClr}`}>
+                        {sr.toFixed(2)}%
+                      </td>
+                      <td className={`py-3 px-3 text-right tabular-nums font-medium ${failClr}`}>
+                        {failRate.toFixed(2)}%
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
@@ -635,13 +1011,17 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } = useUsage();
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } =
+    useUsage();
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
   const ranked = useMemo(() => getTenantRanking(rows, windowHours), [rows, windowHours]);
   const max = Math.max(1, ...ranked.map((r) => r.requests));
 
   const TOP_OPTIONS = [10, 25] as const;
-  type TopN = typeof TOP_OPTIONS[number];
+  type TopN = (typeof TOP_OPTIONS)[number];
   const isScoped = !!effectiveTenant;
 
   function handleClick(id: string) {
@@ -671,14 +1051,28 @@ export function TenantRanking() {
         subtitle={subtitle}
         right={
           isScoped && effectiveTenant ? (
-            <div className="inline-flex items-center gap-1.5" style={{ fontSize: 11, color: "#475569" }}>
-              <span className="rounded-full" style={{ background: effectiveTenant.avatarColor, width: 8, height: 8, display: "inline-block" }} />
+            <div
+              className="inline-flex items-center gap-1.5"
+              style={{ fontSize: 11, color: "#475569" }}
+            >
+              <span
+                className="rounded-full"
+                style={{
+                  background: effectiveTenant.avatarColor,
+                  width: 8,
+                  height: 8,
+                  display: "inline-block",
+                }}
+              />
               <span>Showing: {effectiveTenant.name}</span>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <span style={{ fontSize: 11, color: "#94A3B8" }}>Show</span>
-              <div className="inline-flex items-center overflow-hidden bg-white rounded-md" style={{ border: "1px solid #E2E8F0" }}>
+              <div
+                className="inline-flex items-center overflow-hidden bg-white rounded-md"
+                style={{ border: "1px solid #E2E8F0" }}
+              >
                 {TOP_OPTIONS.map((n, i) => {
                   const active = tenantRankTopN === n;
                   const isLast = i === TOP_OPTIONS.length - 1;
@@ -711,7 +1105,9 @@ export function TenantRanking() {
       <Card className="p-3 max-h-[520px] overflow-y-auto scroll-subtle">
         <div className="space-y-0.5">
           {visible.length === 0 && (
-            <div className="px-3 py-6 text-center text-xs text-slate-400">No tenants in this period</div>
+            <div className="px-3 py-6 text-center text-xs text-slate-400">
+              No tenants in this period
+            </div>
           )}
           {visible.map((r) => {
             const idx = rankIndex.get(r.tenant.id) ?? 0;
@@ -727,8 +1123,15 @@ export function TenantRanking() {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1.5 w-10 shrink-0">
-                    {rankColor && <span className="h-1.5 w-1.5 rounded-full" style={{ background: rankColor }} />}
-                    <span className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx <= 3 ? "text-slate-900" : "text-slate-400"}`}>
+                    {rankColor && (
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ background: rankColor }}
+                      />
+                    )}
+                    <span
+                      className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx <= 3 ? "text-slate-900" : "text-slate-400"}`}
+                    >
                       {r.inactive ? "—" : `#${idx}`}
                     </span>
                   </div>
@@ -737,7 +1140,12 @@ export function TenantRanking() {
                     style={{ background: r.inactive ? "#CBD5E1" : r.tenant.avatarColor }}
                     aria-hidden
                   >
-                    {r.tenant.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                    {r.tenant.name
+                      .split(/\s+/)
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3">
@@ -745,14 +1153,22 @@ export function TenantRanking() {
                         <span
                           title={r.tenant.name}
                           className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}
-                        >{r.tenant.name}</span>
-                        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] border ${
-                          r.inactive
-                            ? "bg-slate-50 border-slate-200 text-slate-400"
-                            : "bg-slate-100 border-slate-200 text-slate-600"
-                        }`}>{r.tenant.plan}</span>
+                        >
+                          {r.tenant.name}
+                        </span>
+                        <span
+                          className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] border ${
+                            r.inactive
+                              ? "bg-slate-50 border-slate-200 text-slate-400"
+                              : "bg-slate-100 border-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {r.tenant.plan}
+                        </span>
                       </div>
-                      <span className={`text-xs tabular-nums shrink-0 ${r.inactive ? "text-slate-300" : "text-slate-600"}`}>
+                      <span
+                        className={`text-xs tabular-nums shrink-0 ${r.inactive ? "text-slate-300" : "text-slate-600"}`}
+                      >
                         {r.inactive ? "—" : fmt(r.requests)}
                       </span>
                     </div>
@@ -761,16 +1177,23 @@ export function TenantRanking() {
                         {!r.inactive && (
                           <div
                             className="h-full rounded-full"
-                            style={{ width: `${(r.requests / max) * 100}%`, background: r.tenant.avatarColor }}
+                            style={{
+                              width: `${(r.requests / max) * 100}%`,
+                              background: r.tenant.avatarColor,
+                            }}
                           />
                         )}
                       </div>
-                      <span className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}>
+                      <span
+                        className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}
+                      >
                         {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
                       </span>
                     </div>
                     {r.inactive && (
-                      <div className="mt-1 text-[10px] text-slate-400 italic">No activity this period</div>
+                      <div className="mt-1 text-[10px] text-slate-400 italic">
+                        No activity this period
+                      </div>
                     )}
                   </div>
                 </div>
@@ -786,19 +1209,30 @@ export function TenantRanking() {
 /* =========================================================
    ZONE 5 — Throughput & Load
 ========================================================= */
-export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { singleLineOnly?: boolean }) {
+export function ThroughputLoad({
+  singleLineOnly: _singleLineOnly = false,
+}: {
+  singleLineOnly?: boolean;
+}) {
   const { windowHours, tenantId } = useScope();
   const { tick, window, effectiveTenant } = useUsage();
   const isDaily = windowHours === 168 || windowHours === 720;
   const isTenantScoped = !!effectiveTenant;
 
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
   const { points, avgRps, peakRps, peakLabel, baseline } = useMemo(
     () => getRpsData(rows, windowHours, []),
-    [rows, windowHours]
+    [rows, windowHours],
   );
 
-  const _peakIdx = points.findIndex((p) => (isDaily ? p.peakRps : p.platformRps) === (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))));
+  const _peakIdx = points.findIndex(
+    (p) =>
+      (isDaily ? p.peakRps : p.platformRps) ===
+      (isDaily ? peakRps : Math.max(...points.map((q) => q.platformRps))),
+  );
 
   const subtitle = isTenantScoped
     ? `Requests per second for ${effectiveTenant!.name}`
@@ -809,15 +1243,21 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
       <Eyebrow subtitle={subtitle}>Throughput &amp; load</Eyebrow>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
         <Card className="p-4">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">Avg RPS</div>
+          <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-500">
+            Avg RPS
+          </div>
           <div className="mt-1 text-[26px] leading-none font-bold text-slate-900 tabular-nums">
-            {avgRps}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
+            {avgRps}
+            <span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">Peak RPS</div>
+          <div className="text-[11px] uppercase tracking-[0.14em] font-medium text-slate-600">
+            Peak RPS
+          </div>
           <div className="mt-1 text-[26px] leading-none font-bold text-slate-900 tabular-nums">
-            {Math.max(peakRps, avgRps).toFixed(3)}<span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
+            {Math.max(peakRps, avgRps).toFixed(3)}
+            <span className="text-sm font-normal text-slate-500 ml-1">req/s</span>
           </div>
           <div className="mt-1.5 text-[12px] text-slate-500 tabular-nums">
             · {window === "1h" ? `${peakLabel} ago` : peakLabel}
@@ -828,12 +1268,56 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={points} margin={{ top: 5, right: 40, left: -10, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => Number(v).toFixed(3)} />
-            <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }} formatter={(v: number, n: string) => [`${Number(v).toFixed(3)} req/s`, n]} separator="  " />
-            <ReferenceLine y={baseline} stroke="#94A3B8" strokeDasharray="4 4" label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }} />
-            <ReferenceLine y={avgRps} stroke="#0EA5E9" strokeDasharray="3 3" label={{ value: `Avg ${Number(avgRps).toFixed(3)}`, position: "right", fill: "#0EA5E9", fontSize: 10 }} />
-            <ReferenceLine y={Math.max(peakRps, avgRps)} stroke="#EF4444" strokeDasharray="3 3" label={{ value: `Peak ${Math.max(peakRps, avgRps).toFixed(3)}`, position: "right", fill: "#EF4444", fontSize: 10 }} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: "#64748B" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: "#64748B" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => Number(v).toFixed(3)}
+            />
+            <Tooltip
+              contentStyle={{
+                fontSize: 12,
+                borderRadius: 8,
+                border: "1px solid #E2E8F0",
+                background: "#fff",
+              }}
+              formatter={(v: number, n: string) => [`${Number(v).toFixed(3)} req/s`, n]}
+              separator="  "
+            />
+            <ReferenceLine
+              y={baseline}
+              stroke="#94A3B8"
+              strokeDasharray="4 4"
+              label={{ value: "30d avg", position: "right", fill: "#94A3B8", fontSize: 10 }}
+            />
+            <ReferenceLine
+              y={avgRps}
+              stroke="#0EA5E9"
+              strokeDasharray="3 3"
+              label={{
+                value: `Avg ${Number(avgRps).toFixed(3)}`,
+                position: "right",
+                fill: "#0EA5E9",
+                fontSize: 10,
+              }}
+            />
+            <ReferenceLine
+              y={Math.max(peakRps, avgRps)}
+              stroke="#EF4444"
+              strokeDasharray="3 3"
+              label={{
+                value: `Peak ${Math.max(peakRps, avgRps).toFixed(3)}`,
+                position: "right",
+                fill: "#EF4444",
+                fontSize: 10,
+              }}
+            />
             <Line
               type="monotone"
               dataKey={isDaily ? "peakRps" : "platformRps"}
@@ -845,7 +1329,6 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
             />
           </LineChart>
         </ResponsiveContainer>
-
       </Card>
     </section>
   );
@@ -857,21 +1340,27 @@ export function ThroughputLoad({ singleLineOnly: _singleLineOnly = false }: { si
 export function ServiceMix() {
   const { windowHours, tenantId } = useScope();
   const { tick, effectiveTenant, role } = useUsage();
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
   const totalRequests = useMemo(() => rows.reduce((a, r) => a + r.requests, 0), [rows]);
   const segments = useMemo(() => {
     const total = totalRequests || 1;
     return SERVICES.map((s) => {
       const requests = rows.filter((r) => r.service === s.key).reduce((a, r) => a + r.requests, 0);
       return { key: s.key, name: s.name, color: s.color, requests, pct: (requests / total) * 100 };
-    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+    })
+      .filter((x) => x.requests > 0)
+      .sort((a, b) => b.requests - a.requests);
   }, [rows, totalRequests]);
 
-  const subtitle = role === "tenant_admin"
-    ? "Your service consumption · reflects selected time window"
-    : effectiveTenant
-      ? `Request distribution for ${effectiveTenant.name} · reflects selected time window`
-      : "Platform-wide request distribution · reflects selected time window";
+  const subtitle =
+    role === "tenant_admin"
+      ? "Your service consumption · reflects selected time window"
+      : effectiveTenant
+        ? `Request distribution for ${effectiveTenant.name} · reflects selected time window`
+        : "Platform-wide request distribution · reflects selected time window";
 
   return (
     <section>
@@ -880,7 +1369,6 @@ export function ServiceMix() {
         <div className="flex items-center gap-5 w-full">
           <div className="relative shrink-0" style={{ width: 200, height: 200 }}>
             <ResponsiveContainer width={200} height={200}>
-
               <PieChart>
                 <Pie
                   data={segments}
@@ -892,18 +1380,35 @@ export function ServiceMix() {
                   strokeWidth={2}
                   isAnimationActive={false}
                 >
-                  {segments.map((s) => <Cell key={s.key} fill={s.color} />)}
+                  {segments.map((s) => (
+                    <Cell key={s.key} fill={s.color} />
+                  ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
-                  formatter={(v: number, _n, p: any) => [`${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`, p.payload.name]}
+                  contentStyle={{
+                    fontSize: 12,
+                    borderRadius: 8,
+                    border: "1px solid #E2E8F0",
+                    background: "#fff",
+                  }}
+                  formatter={(v: number, _n, p: any) => [
+                    `${formatKMB(v)} req · ${p.payload.pct.toFixed(2)}%`,
+                    p.payload.name,
+                  ]}
                   separator="  "
                 />
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>All</div>
-              <div className="mt-1" style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}>Services</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", lineHeight: 1 }}>
+                All
+              </div>
+              <div
+                className="mt-1"
+                style={{ fontSize: 12, fontWeight: 400, color: "#475569", lineHeight: 1 }}
+              >
+                Services
+              </div>
             </div>
           </div>
           <div className="flex-1 min-w-0">
@@ -914,7 +1419,10 @@ export function ServiceMix() {
                 style={{ height: 28 }}
                 title={`${s.name} — ${s.pct.toFixed(2)}%`}
               >
-                <span className="rounded-full shrink-0" style={{ background: s.color, width: 8, height: 8 }} />
+                <span
+                  className="rounded-full shrink-0"
+                  style={{ background: s.color, width: 8, height: 8 }}
+                />
                 <span
                   className="shrink-0 truncate"
                   style={{ fontSize: 12, color: "#0F172A", minWidth: 180 }}
@@ -930,7 +1438,10 @@ export function ServiceMix() {
                     transform: "translateY(-3px)",
                   }}
                 />
-                <span className="tabular-nums shrink-0 text-right" style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", minWidth: 52 }}>
+                <span
+                  className="tabular-nums shrink-0 text-right"
+                  style={{ fontSize: 12, fontWeight: 600, color: "#0F172A", minWidth: 52 }}
+                >
                   {s.pct.toFixed(2)}%
                 </span>
               </div>
@@ -953,7 +1464,9 @@ function heatColor(v: number, max: number) {
   return HEAT_RAMP[idx];
 }
 
-export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | "serviceBar" } = {}) {
+export function CompareTenants({
+  view = "auto",
+}: { view?: "auto" | "heatmap" | "serviceBar" } = {}) {
   const { windowHours, tenantId } = useScope();
   const { effectiveTenant, tick, tenantRankTopN } = useUsage();
   const isTenantScoped = !!effectiveTenant;
@@ -964,31 +1477,46 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
 
   const heat = useMemo(
     () => (resolved === "heatmap" ? getHeatmap(windowHours, selected) : null),
-    [resolved, windowHours, selected]
+    [resolved, windowHours, selected],
   );
 
   const scopedRows = useMemo(
     () => (resolved === "serviceBar" ? getFilteredData({ windowHours, tenantId }) : []),
-    [resolved, windowHours, tenantId, tick]
+    [resolved, windowHours, tenantId, tick],
   );
   const scopedData = useMemo(() => {
     if (resolved !== "serviceBar") return [];
     return SERVICES.map((s) => {
       const r = scopedRows.filter((x) => x.service === s.key);
       return {
-        key: s.key, name: s.name, color: s.color,
+        key: s.key,
+        name: s.name,
+        color: s.color,
         requests: r.reduce((a, x) => a + x.requests, 0),
         nativeUnits: r.reduce((a, x) => a + x.nativeUnits, 0),
         unitShort: s.unitShort,
       };
-    }).filter((x) => x.requests > 0).sort((a, b) => b.requests - a.requests);
+    })
+      .filter((x) => x.requests > 0)
+      .sort((a, b) => b.requests - a.requests);
   }, [resolved, scopedRows]);
 
   function toggle(k: string) {
-    setSelected((s) => s.includes(k) ? (s.length > 1 ? s.filter((x) => x !== k) : s) : [...s, k]);
+    setSelected((s) => (s.includes(k) ? (s.length > 1 ? s.filter((x) => x !== k) : s) : [...s, k]));
   }
 
   const maxTenantTotal = heat ? Math.max(1, ...Object.values(heat.tenantTotals)) : 1;
+
+  const visibleTenants = heat
+    ? [...TENANTS]
+        .filter((t) => (heat.tenantTotals[t.id] || 0) > 0)
+        .filter((t) => (isTenantScoped ? t.id === tenantId : true))
+        .sort((a, b) => (heat.tenantTotals[b.id] || 0) - (heat.tenantTotals[a.id] || 0))
+        .slice(0, isTenantScoped ? 1 : tenantRankTopN)
+    : [];
+  const visibleTotal = heat
+    ? visibleTenants.reduce((a, t) => a + (heat.tenantTotals[t.id] || 0), 0)
+    : 0;
 
   return (
     <section>
@@ -997,24 +1525,57 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
           {/* @keep-existing-structure */}
           {resolved === "serviceBar" ? (
             <>
-              <Eyebrow subtitle={`Request volume by service${isTenantScoped ? ` for ${effectiveTenant!.name}` : ""}`}>Request volume by service</Eyebrow>
+              <Eyebrow
+                subtitle={`Request volume by service${isTenantScoped ? ` for ${effectiveTenant!.name}` : ""}`}
+              >
+                Request volume by service
+              </Eyebrow>
               <Card className="p-5">
-                <ResponsiveContainer width="100%" height={Math.max(220, scopedData.length * 38 + 40)}>
-                  <BarChart data={scopedData} layout="vertical" margin={{ top: 5, right: 110, left: 30, bottom: 0 }}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={Math.max(220, scopedData.length * 38 + 40)}
+                >
+                  <BarChart
+                    data={scopedData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 110, left: 30, bottom: 0 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: "#64748B" }} axisLine={false} tickLine={false} tickFormatter={(v) => formatAxisKMB(v)} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#475569" }} axisLine={false} tickLine={false} width={170} />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 11, fill: "#64748B" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => formatAxisKMB(v)}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ fontSize: 11, fill: "#475569" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={170}
+                    />
                     <Tooltip
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff" }}
+                      contentStyle={{
+                        fontSize: 12,
+                        borderRadius: 8,
+                        border: "1px solid #E2E8F0",
+                        background: "#fff",
+                      }}
                       formatter={(v: number, _n, p: any) => [
                         `${formatKMB(v)} req · ${formatKMB(p.payload.nativeUnits)} ${p.payload.unitShort}`,
                         "Usage",
                       ]}
                       separator="  "
                     />
-                    <Bar dataKey="requests" radius={[0, 3, 3, 0]}
+                    <Bar
+                      dataKey="requests"
+                      radius={[0, 3, 3, 0]}
                       label={{
-                        position: "right", fontSize: 11, fill: "#475569",
+                        position: "right",
+                        fontSize: 11,
+                        fill: "#475569",
                         formatter: (_v: any, _n: any, p: any) => {
                           const d = p?.payload;
                           if (!d) return "";
@@ -1022,7 +1583,9 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                         },
                       }}
                     >
-                      {scopedData.map((s) => <Cell key={s.key} fill={s.color} />)}
+                      {scopedData.map((s) => (
+                        <Cell key={s.key} fill={s.color} />
+                      ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -1035,27 +1598,58 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                 right={
                   <div className="flex items-center gap-2">
                     {isTenantScoped && effectiveTenant ? (
-                      <div className="inline-flex items-center gap-1.5" style={{ fontSize: 11, color: "#475569" }}>
-                        <span className="rounded-full" style={{ background: effectiveTenant.avatarColor, width: 8, height: 8, display: "inline-block" }} />
+                      <div
+                        className="inline-flex items-center gap-1.5"
+                        style={{ fontSize: 11, color: "#475569" }}
+                      >
+                        <span
+                          className="rounded-full"
+                          style={{
+                            background: effectiveTenant.avatarColor,
+                            width: 8,
+                            height: 8,
+                            display: "inline-block",
+                          }}
+                        />
                         <span>Showing: {effectiveTenant.name}</span>
                       </div>
                     ) : null}
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-slate-200 text-xs text-slate-700 hover:bg-slate-50">
-                          Select services ({selected.length}) <ChevronDown className="h-3.5 w-3.5" />
+                          Select services ({selected.length}){" "}
+                          <ChevronDown className="h-3.5 w-3.5" />
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-60 p-2" align="end">
                         <div className="flex justify-between gap-2 px-1 pb-2 mb-1 border-b border-slate-100 text-xs">
-                          <button className="text-orange-600 hover:underline" onClick={() => setSelected(SERVICES.map((s) => s.key))}>Select all</button>
-                          <button className="text-slate-500 hover:underline" onClick={() => setSelected([SERVICES[0].key])}>Clear all</button>
+                          <button
+                            className="text-orange-600 hover:underline"
+                            onClick={() => setSelected(SERVICES.map((s) => s.key))}
+                          >
+                            Select all
+                          </button>
+                          <button
+                            className="text-slate-500 hover:underline"
+                            onClick={() => setSelected([SERVICES[0].key])}
+                          >
+                            Clear all
+                          </button>
                         </div>
                         <div className="space-y-0.5 max-h-[320px] overflow-y-auto">
                           {SERVICES.map((s) => (
-                            <label key={s.key} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer">
-                              <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} />
-                              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
+                            <label
+                              key={s.key}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-50 cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={selected.includes(s.key)}
+                                onCheckedChange={() => toggle(s.key)}
+                              />
+                              <span
+                                className="h-2.5 w-2.5 rounded-sm"
+                                style={{ background: s.color }}
+                              />
                               <span className="text-sm">{s.name}</span>
                             </label>
                           ))}
@@ -1064,39 +1658,62 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                     </Popover>
                   </div>
                 }
-              >Usage by tenant &amp; service</Eyebrow>
+              >
+                Usage by tenant &amp; service
+              </Eyebrow>
               <Card className="p-5 overflow-x-auto">
                 <table className="w-full border-collapse text-[11px]">
                   <thead>
                     <tr>
-                      <th className="text-left font-semibold text-slate-500 uppercase tracking-wider pb-2 pr-3 align-bottom" style={{ minWidth: 160 }}>Tenant</th>
+                      <th
+                        className="text-left font-semibold text-slate-500 uppercase tracking-wider pb-2 pr-3 align-bottom"
+                        style={{ minWidth: 160 }}
+                      >
+                        Tenant
+                      </th>
                       {selected.map((k) => {
                         const s = SERVICES.find((x) => x.key === k)!;
                         return (
-                          <th key={k} className="px-1 pb-2 align-bottom" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
+                          <th
+                            key={k}
+                            className="px-1 pb-2 align-bottom"
+                            style={{ width: 80, minWidth: 80, maxWidth: 80 }}
+                          >
                             <div className="flex flex-col items-center gap-1">
-                              <span className="h-1.5 w-6 rounded-sm" style={{ background: s.color }} />
-                              <span className="text-slate-600 font-medium whitespace-nowrap" title={s.name}>{abbrService(s.name)}</span>
+                              <span
+                                className="h-1.5 w-6 rounded-sm"
+                                style={{ background: s.color }}
+                              />
+                              <span
+                                className="text-slate-600 font-medium whitespace-nowrap"
+                                title={s.name}
+                              >
+                                {abbrService(s.name)}
+                              </span>
                             </div>
                           </th>
                         );
                       })}
-                      <th className="text-right font-semibold text-slate-500 uppercase tracking-wider pb-2 pl-3 align-bottom" style={{ minWidth: 140 }}>Total</th>
+                      <th
+                        className="text-right font-semibold text-slate-500 uppercase tracking-wider pb-2 pl-3 align-bottom"
+                        style={{ minWidth: 140 }}
+                      >
+                        Total
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[...TENANTS]
-                      .filter((t) => (heat!.tenantTotals[t.id] || 0) > 0)
-                      .filter((t) => (isTenantScoped ? t.id === tenantId : true))
-                      .sort((a, b) => (heat!.tenantTotals[b.id] || 0) - (heat!.tenantTotals[a.id] || 0))
-                      .slice(0, isTenantScoped ? 1 : tenantRankTopN)
-                      .map((t) => {
+                    {visibleTenants.map((t) => {
                       const total = heat!.tenantTotals[t.id] || 0;
+                      const totalPct = visibleTotal ? (total / visibleTotal) * 100 : 0;
                       return (
                         <tr key={t.id} className="border-t border-slate-100">
                           <td className="py-1 pr-3">
                             <div className="flex items-center gap-2">
-                              <span className="h-2 w-2 rounded-full shrink-0" style={{ background: t.avatarColor }} />
+                              <span
+                                className="h-2 w-2 rounded-full shrink-0"
+                                style={{ background: t.avatarColor }}
+                              />
                               <span className="text-slate-800 text-xs truncate">{t.name}</span>
                             </div>
                           </td>
@@ -1107,29 +1724,58 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                             const pct = total ? (v / total) * 100 : 0;
                             const svc = SERVICES.find((x) => x.key === k)!;
                             return (
-                              <td key={k} className="p-0.5" style={{ width: 80, minWidth: 80, maxWidth: 80 }}>
+                              <td
+                                key={k}
+                                className="p-0.5"
+                                style={{ width: 80, minWidth: 80, maxWidth: 80 }}
+                              >
                                 <div
                                   className="flex flex-col items-center justify-center rounded-sm tabular-nums"
-                                  style={{ background: bg, height: 44, color: dark ? "#fff" : "#334155" }}
+                                  style={{
+                                    background: bg,
+                                    height: 44,
+                                    color: dark ? "#fff" : "#334155",
+                                  }}
                                   title={`${t.name} · ${svc.name} · ${formatKMB(v)} req · ${pct.toFixed(2)}% of tenant`}
                                 >
                                   {v > 0 ? (
                                     <>
-                                      <span style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.1 }}>{formatKMB(v)}</span>
-                                      <span style={{ fontSize: 9, color: dark ? "rgba(255,255,255,0.85)" : "#64748B", lineHeight: 1.1 }}>{pct.toFixed(1)}%</span>
+                                      <span
+                                        style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.1 }}
+                                      >
+                                        {formatKMB(v)}
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: 9,
+                                          color: dark ? "rgba(255,255,255,0.85)" : "#64748B",
+                                          lineHeight: 1.1,
+                                        }}
+                                      >
+                                        {pct.toFixed(1)}%
+                                      </span>
                                     </>
                                   ) : null}
                                 </div>
                               </td>
                             );
-
                           })}
                           <td className="pl-3 py-1">
-                            <div className="flex items-center gap-2 justify-end">
-                              <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                <div className="h-full bg-orange-500" style={{ width: `${(total / maxTenantTotal) * 100}%` }} />
+                            <div className="flex flex-col items-end justify-center gap-0.5">
+                              <div className="flex items-center gap-2 justify-end">
+                                <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                  <div
+                                    className="h-full bg-orange-500"
+                                    style={{ width: `${(total / maxTenantTotal) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="tabular-nums text-slate-700 text-xs w-16 text-right">
+                                  {formatKMB(total)}
+                                </span>
                               </div>
-                              <span className="tabular-nums text-slate-700 text-xs w-16 text-right">{formatKMB(total)}</span>
+                              <span className="text-[10px] text-slate-500 tabular-nums w-16 text-right">
+                                {totalPct.toFixed(1)}%
+                              </span>
                             </div>
                           </td>
                         </tr>
@@ -1138,14 +1784,19 @@ export function CompareTenants({ view = "auto" }: { view?: "auto" | "heatmap" | 
                   </tbody>
                 </table>
                 <div className="mt-3 text-[12px] text-slate-500">
-                  Showing Top {isTenantScoped ? 1 : tenantRankTopN} tenants by total request volume, matching the Tenant Ranking filter.
+                  Showing Top {isTenantScoped ? 1 : tenantRankTopN} tenants by total request volume,
+                  matching the Tenant Ranking filter.
                 </div>
                 <div className="mt-3 flex items-center justify-between gap-4 text-[11px] text-slate-500">
                   <span className="italic">Colour intensity = request volume.</span>
                   <span className="inline-flex items-center gap-1.5">
                     <span>Low</span>
                     {HEAT_RAMP.map((c, i) => (
-                      <span key={i} className="inline-block h-2.5 w-4 border border-slate-200" style={{ background: c }} />
+                      <span
+                        key={i}
+                        className="inline-block h-2.5 w-4 border border-slate-200"
+                        style={{ background: c }}
+                      />
                     ))}
                     <span>High</span>
                   </span>
@@ -1185,7 +1836,10 @@ export function LoadingOverlay({ children }: { children: React.ReactNode }) {
 export function ServiceKPIs() {
   const { windowHours, tenantId } = useScope();
   const { tick } = useUsage();
-  const rows = useMemo(() => getFilteredData({ windowHours, tenantId }), [windowHours, tenantId, tick]);
+  const rows = useMemo(
+    () => getFilteredData({ windowHours, tenantId }),
+    [windowHours, tenantId, tick],
+  );
 
   const perService = useMemo(() => {
     return SERVICES.map((s) => {
@@ -1206,13 +1860,27 @@ export function ServiceKPIs() {
   return (
     <section>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
-
-
-        <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Most used service</div>
+        <div
+          className="rounded-xl bg-white p-5 flex flex-col"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
+        >
+          <div
+            className="text-[11px] uppercase font-medium tracking-[0.08em]"
+            style={{ color: "#475569" }}
+          >
+            Most used service
+          </div>
           <div className="mt-2 flex items-center gap-2 leading-none">
-            {mostUsed && <span className="rounded-full shrink-0" style={{ background: mostUsed.color, width: 10, height: 10 }} />}
-            <span className="tabular-nums truncate" style={{ fontSize: 24, fontWeight: 700, color: "#0F172A" }}>
+            {mostUsed && (
+              <span
+                className="rounded-full shrink-0"
+                style={{ background: mostUsed.color, width: 10, height: 10 }}
+              />
+            )}
+            <span
+              className="tabular-nums truncate"
+              style={{ fontSize: 24, fontWeight: 700, color: "#0F172A" }}
+            >
               {mostUsed ? abbrService(mostUsed.name) : "—"}
             </span>
           </div>
@@ -1221,11 +1889,27 @@ export function ServiceKPIs() {
           </div>
         </div>
 
-        <div className="rounded-xl bg-white p-5 flex flex-col" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-          <div className="text-[11px] uppercase font-medium tracking-[0.08em]" style={{ color: "#475569" }}>Highest failure rate</div>
+        <div
+          className="rounded-xl bg-white p-5 flex flex-col"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
+        >
+          <div
+            className="text-[11px] uppercase font-medium tracking-[0.08em]"
+            style={{ color: "#475569" }}
+          >
+            Highest failure rate
+          </div>
           <div className="mt-2 flex items-center gap-2 leading-none">
-            {highestFail && <span className="rounded-full shrink-0" style={{ background: highestFail.color, width: 10, height: 10 }} />}
-            <span className="tabular-nums truncate" style={{ fontSize: 24, fontWeight: 700, color: failClr }}>
+            {highestFail && (
+              <span
+                className="rounded-full shrink-0"
+                style={{ background: highestFail.color, width: 10, height: 10 }}
+              />
+            )}
+            <span
+              className="tabular-nums truncate"
+              style={{ fontSize: 24, fontWeight: 700, color: failClr }}
+            >
               {highestFail ? abbrService(highestFail.name) : "—"}
             </span>
           </div>
