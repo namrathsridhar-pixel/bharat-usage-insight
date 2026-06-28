@@ -1011,8 +1011,9 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } =
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN, window } =
     useUsage();
+
   const rows = useMemo(
     () => getFilteredData({ windowHours, tenantId }),
     [windowHours, tenantId, tick],
