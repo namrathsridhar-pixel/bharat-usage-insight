@@ -1011,7 +1011,7 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN, window } =
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } =
     useUsage();
 
   const rows = useMemo(
