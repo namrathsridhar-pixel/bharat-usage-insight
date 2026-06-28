@@ -1011,8 +1011,9 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } =
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN, window } =
     useUsage();
+
   const rows = useMemo(
     () => getFilteredData({ windowHours, tenantId }),
     [windowHours, tenantId, tick],
@@ -1048,13 +1049,42 @@ export function TenantRanking() {
   const activeTenantCount = activeRanked.length;
   const totalRequests = rows.reduce((sum, r) => sum + r.requests, 0);
   const avgRequests = activeTenantCount > 0 ? totalRequests / activeTenantCount : 0;
-  const avgRatio = max > 0 ? Math.min(1, Math.max(0, avgRequests / max)) : 0;
-  const showRefLine = !isScoped && visible.length > 0 && activeTenantCount > 0;
+  const showSummaryCard = !isScoped && activeTenantCount > 0;
+
+  const windowLabel =
+    window === "1h"
+      ? "Last 1 hour"
+      : window === "24h"
+        ? "Last 24 hours"
+        : window === "7d"
+          ? "Last 7 days"
+          : "Last 30 days";
+
 
 
   return (
     <section>
+      {showSummaryCard && (
+        <Card className="rounded-lg p-3 mb-3">
+          <div
+            className="text-[11px] uppercase tracking-[0.14em] font-semibold"
+            style={{ color: "#64748B" }}
+          >
+            Avg requests per active tenant
+          </div>
+          <div
+            className="mt-1 leading-none tabular-nums"
+            style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}
+          >
+            {formatKMB(avgRequests)}
+          </div>
+          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>
+            across {activeTenantCount} active tenants · {windowLabel}
+          </div>
+        </Card>
+      )}
       <Eyebrow
+
         subtitle={subtitle}
         right={
           isScoped && effectiveTenant ? (
@@ -1110,139 +1140,106 @@ export function TenantRanking() {
         Tenant ranking
       </Eyebrow>
       <Card className="p-3 max-h-[520px] overflow-y-auto scroll-subtle">
-        <div className="relative">
-          {showRefLine && (
-            <>
-              <div
-                className="absolute pointer-events-none"
-                style={{
-                  left: `calc(100px + ${avgRatio.toFixed(6)} * (100% - 168px))`,
-                  top: 36,
-                  bottom: 0,
-                  width: 1,
-                  zIndex: 1,
-                  background: "repeating-linear-gradient(to bottom, #94A3B8 0, #94A3B8 3px, transparent 3px, transparent 6px)",
-                }}
-              />
-              <div
-                className="absolute pointer-events-none"
-                style={{
-                  left: `calc(100px + ${avgRatio.toFixed(6)} * (100% - 168px))`,
-                  top: 24,
-                  transform: "translateX(-50%)",
-                  fontSize: 10,
-                  color: "#94A3B8",
-                  zIndex: 1,
-                  lineHeight: 1,
-                  background: "rgba(255,255,255,0.9)",
-                  padding: "0 4px",
-                  borderRadius: 2,
-                }}
-              >
-                Avg
-              </div>
-            </>
+        <div className="space-y-0.5">
+          {visible.length === 0 && (
+            <div className="px-3 py-6 text-center text-xs text-slate-400">
+              No tenants in this period
+            </div>
           )}
-          <div className="space-y-0.5">
-            {visible.length === 0 && (
-              <div className="px-3 py-6 text-center text-xs text-slate-400">
-                No tenants in this period
-              </div>
-            )}
-            {visible.map((r) => {
-              const idx = rankIndex.get(r.tenant.id) ?? 0;
-              const rankColor = !r.inactive && idx <= 3 ? RANK_COLOR[idx - 1] : undefined;
-              return (
-                <button
-                  key={r.tenant.id}
-                  onClick={() => !r.inactive && handleClick(r.tenant.id)}
-                  className={`press-anim w-full text-left px-3 py-2.5 rounded-lg transition group ${
-                    r.inactive ? "cursor-default opacity-70" : "hover:bg-orange-50/60"
-                  }`}
-                  disabled={r.inactive}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 w-10 shrink-0">
-                      {rankColor && (
-                        <span
-                          className="h-1.5 w-1.5 rounded-full"
-                          style={{ background: rankColor }}
-                        />
-                      )}
+          {visible.map((r) => {
+            const idx = rankIndex.get(r.tenant.id) ?? 0;
+            const rankColor = !r.inactive && idx <= 3 ? RANK_COLOR[idx - 1] : undefined;
+            return (
+              <button
+                key={r.tenant.id}
+                onClick={() => !r.inactive && handleClick(r.tenant.id)}
+                className={`press-anim w-full text-left px-3 py-2.5 rounded-lg transition group ${
+                  r.inactive ? "cursor-default opacity-70" : "hover:bg-orange-50/60"
+                }`}
+                disabled={r.inactive}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 w-10 shrink-0">
+                    {rankColor && (
                       <span
-                        className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx <= 3 ? "text-slate-900" : "text-slate-400"}`}
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ background: rankColor }}
+                      />
+                    )}
+                    <span
+                      className={`text-[11px] tabular-nums font-semibold ${r.inactive ? "text-slate-300" : idx <= 3 ? "text-slate-900" : "text-slate-400"}`}
+                    >
+                      {r.inactive ? "—" : `#${idx}`}
+                    </span>
+                  </div>
+                  <span
+                    className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
+                    style={{ background: r.inactive ? "#CBD5E1" : r.tenant.avatarColor }}
+                    aria-hidden
+                  >
+                    {r.tenant.name
+                      .split(/\s+/)
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span
+                          title={r.tenant.name}
+                          className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}
+                        >
+                          {r.tenant.name}
+                        </span>
+                        <span
+                          className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] border ${
+                            r.inactive
+                              ? "bg-slate-50 border-slate-200 text-slate-400"
+                              : "bg-slate-100 border-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {r.tenant.plan}
+                        </span>
+                      </div>
+                      <span
+                        className={`text-xs tabular-nums shrink-0 ${r.inactive ? "text-slate-300" : "text-slate-600"}`}
                       >
-                        {r.inactive ? "—" : `#${idx}`}
+                        {r.inactive ? "—" : fmt(r.requests)}
                       </span>
                     </div>
-                    <span
-                      className="h-6 w-6 shrink-0 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
-                      style={{ background: r.inactive ? "#CBD5E1" : r.tenant.avatarColor }}
-                      aria-hidden
-                    >
-                      {r.tenant.name
-                        .split(/\s+/)
-                        .map((w) => w[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <div className="flex items-baseline gap-2 min-w-0">
-                          <span
-                            title={r.tenant.name}
-                            className={`text-sm font-medium truncate ${r.inactive ? "text-slate-400" : "text-slate-900 group-hover:text-orange-600"}`}
-                          >
-                            {r.tenant.name}
-                          </span>
-                          <span
-                            className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] border ${
-                              r.inactive
-                                ? "bg-slate-50 border-slate-200 text-slate-400"
-                                : "bg-slate-100 border-slate-200 text-slate-600"
-                            }`}
-                          >
-                            {r.tenant.plan}
-                          </span>
-                        </div>
-                        <span
-                          className={`text-xs tabular-nums shrink-0 ${r.inactive ? "text-slate-300" : "text-slate-600"}`}
-                        >
-                          {r.inactive ? "—" : fmt(r.requests)}
-                        </span>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                        {!r.inactive && (
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${(r.requests / max) * 100}%`,
+                              background: r.tenant.avatarColor,
+                            }}
+                          />
+                        )}
                       </div>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
-                          {!r.inactive && (
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${(r.requests / max) * 100}%`,
-                                background: r.tenant.avatarColor,
-                              }}
-                            />
-                          )}
-                        </div>
-                        <span
-                          className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}
-                        >
-                          {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
-                        </span>
-                      </div>
-                      {r.inactive && (
-                        <div className="mt-1 text-[10px] text-slate-400 italic">
-                          No activity this period
-                        </div>
-                      )}
+                      <span
+                        className={`text-[10px] tabular-nums w-12 text-right ${r.inactive ? "text-slate-300" : "text-slate-500"}`}
+                      >
+                        {r.inactive ? "—" : `${r.pct.toFixed(2)}%`}
+                      </span>
                     </div>
+                    {r.inactive && (
+                      <div className="mt-1 text-[10px] text-slate-400 italic">
+                        No activity this period
+                      </div>
+                    )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </Card>
+
 
     </section>
   );
