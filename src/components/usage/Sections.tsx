@@ -1049,8 +1049,17 @@ export function TenantRanking() {
   const activeTenantCount = activeRanked.length;
   const totalRequests = rows.reduce((sum, r) => sum + r.requests, 0);
   const avgRequests = activeTenantCount > 0 ? totalRequests / activeTenantCount : 0;
-  const avgRatio = max > 0 ? Math.min(1, Math.max(0, avgRequests / max)) : 0;
-  const showRefLine = !isScoped && visible.length > 0 && activeTenantCount > 0;
+  const showSummaryCard = !isScoped && activeTenantCount > 0;
+
+  const windowLabel =
+    window === "1h"
+      ? "Last 1 hour"
+      : window === "24h"
+        ? "Last 24 hours"
+        : window === "7d"
+          ? "Last 7 days"
+          : "Last 30 days";
+
 
 
   return (
