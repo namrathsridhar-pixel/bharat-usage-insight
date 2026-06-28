@@ -1064,7 +1064,27 @@ export function TenantRanking() {
 
   return (
     <section>
+      {showSummaryCard && (
+        <Card className="rounded-lg p-3 mb-3">
+          <div
+            className="text-[11px] uppercase tracking-[0.14em] font-semibold"
+            style={{ color: "#64748B" }}
+          >
+            Avg requests per active tenant
+          </div>
+          <div
+            className="mt-1 leading-none tabular-nums"
+            style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}
+          >
+            {formatKMB(avgRequests)}
+          </div>
+          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>
+            across {activeTenantCount} active tenants · {windowLabel}
+          </div>
+        </Card>
+      )}
       <Eyebrow
+
         subtitle={subtitle}
         right={
           isScoped && effectiveTenant ? (
