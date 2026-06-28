@@ -1011,7 +1011,7 @@ const RANK_COLOR = ["#F59E0B", "#94A3B8", "#B45309"];
 
 export function TenantRanking() {
   const { windowHours, tenantId } = useScope();
-  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN, window } =
+  const { tick, setSelectedTenantId, effectiveTenant, tenantRankTopN, setTenantRankTopN } =
     useUsage();
 
   const rows = useMemo(
@@ -1051,17 +1051,6 @@ export function TenantRanking() {
   const avgRequests = activeTenantCount > 0 ? totalRequests / activeTenantCount : 0;
   const showSummaryCard = !isScoped && activeTenantCount > 0;
 
-  const windowLabel =
-    window === "1h"
-      ? "Last 1 hour"
-      : window === "24h"
-        ? "Last 24 hours"
-        : window === "7d"
-          ? "Last 7 days"
-          : "Last 30 days";
-
-
-
   return (
     <section>
       {showSummaryCard && (
@@ -1070,16 +1059,13 @@ export function TenantRanking() {
             className="text-[11px] uppercase tracking-[0.14em] font-semibold"
             style={{ color: "#64748B" }}
           >
-            Avg requests per active tenant
+            Avg Requests per Active Tenant
           </div>
           <div
             className="mt-1 leading-none tabular-nums"
             style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}
           >
             {formatKMB(avgRequests)}
-          </div>
-          <div className="mt-1" style={{ fontSize: 11, color: "#94A3B8" }}>
-            across {activeTenantCount} active tenants · {windowLabel}
           </div>
         </Card>
       )}
